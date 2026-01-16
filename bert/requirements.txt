@@ -1,0 +1,7 @@
+coremltools
+huggingface_hub
+transformers
+torch
+datasets
+accelerate
+scikit-learn

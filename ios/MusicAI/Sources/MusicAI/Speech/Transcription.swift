@@ -1,0 +1,178 @@
+/*
+ See the LICENSE.txt file for this sample’s licensing information.
+ 
+ Abstract:
+ Live transcription code
+ */
+
+import Foundation
+import Speech
+import SwiftUI
+
+@Observable
+@MainActor
+public final class SpokenWordTranscriber {
+	private var inputSequence: AsyncStream<AnalyzerInput>?
+	private var inputBuilder: AsyncStream<AnalyzerInput>.Continuation?
+	private var transcriber: SpeechTranscriber?
+	private var analyzer: SpeechAnalyzer?
+	private var recognizerTask: Task<(), Error>?
+	private var audioStreamTask: Task<Void, Never>?
+	
+	static let magenta = Color(red: 0.54, green: 0.02, blue: 0.6).opacity(0.8) // #e81cff
+	
+	// The format of the audio.
+	var analyzerFormat: AVAudioFormat?
+	
+	var converter = BufferConverter()
+	var downloadProgress: Progress?
+	
+	public private(set) var volatileTranscript: AttributedString = ""
+	public private(set) var finalizedTranscript: AttributedString = ""
+	
+	public func resetTranscripts() {
+		volatileTranscript = ""
+		finalizedTranscript = ""
+	}
+	
+	static let locale = Locale(components: .init(languageCode: .english, script: nil, languageRegion: .unitedStates))
+	
+	public init() {
+	}
+	
+	public func setUpTranscriber() async throws {
+		if transcriber != nil {
+			return
+		}
+
+		transcriber = SpeechTranscriber(locale: Locale.current,
+										transcriptionOptions: [],
+										reportingOptions: [.fastResults],
+										attributeOptions: [])
+		
+		guard let transcriber else {
+			throw TranscriptionError.failedToSetupRecognitionStream
+		}
+		
+		analyzer = SpeechAnalyzer(modules: [transcriber])
+		
+		do {
+			try await ensureModel(transcriber: transcriber, locale: Locale.current)
+		} catch let error as TranscriptionError {
+			print(error)
+			return
+		}
+		
+		self.analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber])
+		do {
+			try await self.analyzer?.prepareToAnalyze(in: self.analyzerFormat!)
+			print("Prepared to analyze")
+		} catch {
+			print("Failed to prepare to analyze: \(error)")
+		}
+		(inputSequence, inputBuilder) = AsyncStream<AnalyzerInput>.makeStream()
+		
+		guard let inputSequence else { return }
+		
+		recognizerTask = Task { [weak self] in
+			do {
+				for try await case let result in transcriber.results {
+                    guard let self else { break }
+					let text = result.text
+					if result.isFinal {
+						print("Recognized text: \(text)")
+						finalizedTranscript += text
+						volatileTranscript = ""
+					} else {
+						volatileTranscript = text
+						volatileTranscript.foregroundColor = .purple.opacity(0.4)
+					}
+				}
+			} catch {
+				print("speech recognition failed")
+			}
+		}
+		
+		try await analyzer?.start(inputSequence: inputSequence)
+	}
+	
+	public func streamAudioToTranscriber(_ buffer: AVAudioPCMBuffer) async throws {
+		guard let inputBuilder, let analyzerFormat else {
+			throw TranscriptionError.invalidAudioDataType
+		}
+		
+		let converted = try self.converter.convertBuffer(buffer, to: analyzerFormat)
+		let input = AnalyzerInput(buffer: converted)
+		
+		inputBuilder.yield(input)
+	}
+
+	public func startTranscribing(from audioStream: AsyncStream<AudioData>) {
+		audioStreamTask?.cancel()
+		audioStreamTask = Task { [weak self] in
+			do {
+				for await audioData in audioStream {
+					try Task.checkCancellation()
+					guard let strongSelf = self else { break }
+					try await strongSelf.streamAudioToTranscriber(audioData.buffer)
+				}
+			} catch is CancellationError {
+				// Swallow cancellation.
+			} catch {
+				print("Failed to feed audio into analyzer: \(error)")
+			}
+		}
+	}
+	
+	public func finishTranscribing() async throws {
+		audioStreamTask?.cancel()
+		audioStreamTask = nil
+		inputBuilder?.finish()
+		try await analyzer?.finalizeAndFinishThroughEndOfInput()
+		recognizerTask?.cancel()
+		recognizerTask = nil
+		transcriber = nil
+		analyzer = nil
+		analyzerFormat = nil
+		inputSequence = nil
+		inputBuilder = nil
+	}
+}
+
+extension SpokenWordTranscriber {
+	public func ensureModel(transcriber: SpeechTranscriber, locale: Locale) async throws {
+		guard await supported(locale: locale) else {
+			throw TranscriptionError.localeNotSupported
+		}
+		
+		if await installed(locale: locale) {
+			return
+		} else {
+			try await downloadIfNeeded(for: transcriber)
+		}
+	}
+	
+	func supported(locale: Locale) async -> Bool {
+		let supported = await SpeechTranscriber.supportedLocales
+		return supported.map { $0.identifier(.bcp47) }.contains(locale.identifier(.bcp47))
+	}
+	
+	func installed(locale: Locale) async -> Bool {
+		let installed = await Set(SpeechTranscriber.installedLocales)
+		return installed.map { $0.identifier(.bcp47) }.contains(locale.identifier(.bcp47))
+	}
+	
+	func downloadIfNeeded(for module: SpeechTranscriber) async throws {
+		if let downloader = try await AssetInventory.assetInstallationRequest(supporting: [module]) {
+			self.downloadProgress = downloader.progress
+			try await downloader.downloadAndInstall()
+		}
+	}
+	
+	func releaseLocales() async {
+		let reserved = await AssetInventory.reservedLocales
+		for locale in reserved {
+			await AssetInventory.release(reservedLocale: locale)
+		}
+	}
+}

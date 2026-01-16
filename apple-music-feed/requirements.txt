@@ -1,0 +1,5 @@
+PyJWT
+requests
+cryptography
+pandas
+pyarrow

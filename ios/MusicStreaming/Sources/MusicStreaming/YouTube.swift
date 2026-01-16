@@ -1,0 +1,54 @@
+//
+//  YouTube.swift
+//  MusicStreaming
+//
+//  Created by Gemini on 2026-01-21.
+//
+
+import Foundation
+import Observation
+
+@MainActor
+@Observable
+public class YouTube: StreamingMusicProvider {
+    public let name: String = "YouTube"
+    public var isPlaying: Bool = false
+    public var currentTrack: Track?
+    public var currentPlaybackTime: TimeInterval = 0
+
+    public init() {}
+    
+    @discardableResult
+    public func play(artist: String, song: String) async throws -> Track {
+        let track = Track(title: song, artist: artist, album: "", duration: 0)
+        self.currentTrack = track
+        return track
+    }
+    
+    @discardableResult
+    public func play(track: Track) async throws -> Track {
+        self.currentTrack = track
+        isPlaying = true
+        return track
+    }
+
+    public func search(query: String) async throws -> [Track] {
+        return []
+    }
+
+    public func getTopSongs(for artist: String) async throws -> [Track] {
+        return []
+    }
+
+    public func pause() {
+    }
+    
+    public func unpause() async throws {
+    }
+    
+    public func stop() {
+    }
+    
+    public func seek(to time: TimeInterval) {
+    }
+}

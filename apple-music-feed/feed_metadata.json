@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": "song_2026-01-19T16-06",
+      "type": "exports",
+      "href": "/v1/feed/exports/song_2026-01-19T16-06"
+    }
+  ],
+  "resources": {
+    "exports": {
+      "song_2026-01-19T16-06": {
+        "id": "song_2026-01-19T16-06",
+        "type": "exports",
+        "href": "/v1/feed/exports/song_2026-01-19T16-06",
+        "attributes": {
+          "dateGenerated": "2026-01-19T16:06Z",
+          "feed": "song",
+          "format": "parquet"
+        }
+      }
+    }
+  }
+}

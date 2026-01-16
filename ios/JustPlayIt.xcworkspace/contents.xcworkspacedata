@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:MusicOutput">
+   </FileRef>
+   <FileRef
+      location = "group:MusicRecognition">
+   </FileRef>
+   <FileRef
+      location = "group:MusicAI">
+   </FileRef>
+   <Group
+      location = "group:MusicStreaming"
+      name = "MusicStreaming">
+      <Group
+         location = "group:Tests"
+         name = "Tests">
+         <Group
+            location = "group:MusicStreamingTests"
+            name = "MusicStreamingTests">
+            <FileRef
+               location = "group:MusicStreamingTests.swift">
+            </FileRef>
+         </Group>
+      </Group>
+      <FileRef
+         location = "group:Package.swift">
+      </FileRef>
+      <Group
+         location = "group:Sources"
+         name = "Sources">
+         <Group
+            location = "group:MusicStreaming"
+            name = "MusicStreaming">
+            <FileRef
+               location = "group:YouTube.swift">
+            </FileRef>
+            <FileRef
+               location = "group:MusicStreaming.swift">
+            </FileRef>
+            <FileRef
+               location = "group:AppleMusic.swift">
+            </FileRef>
+            <FileRef
+               location = "group:MusicPlayer.swift">
+            </FileRef>
+            <FileRef
+               location = "group:Unauthorized.swift">
+            </FileRef>
+            <FileRef
+               location = "group:AuthorizationManager.swift">
+            </FileRef>
+            <FileRef
+               location = "group:Tidal.swift">
+            </FileRef>
+         </Group>
+      </Group>
+   </Group>
+   <FileRef
+      location = "group:App/JustPlayIt.xcodeproj">
+   </FileRef>
+</Workspace>
