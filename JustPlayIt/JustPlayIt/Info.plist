@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>JustPlayIt needs access to your music library to play your favorite tracks.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>JustPlayIt needs access to the microphone to listen to your voice commands.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>JustPlayIt needs speech recognition to understand your voice commands.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+</dict>
+</plist>
