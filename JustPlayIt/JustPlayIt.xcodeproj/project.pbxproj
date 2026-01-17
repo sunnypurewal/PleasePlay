@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A3EDD2BE2F1B4D9E00331C09 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2BD2F1B4D9E00331C09 /* Tokenizers */; };
+		A3EDD2C72F1BD48A00331C09 /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2C62F1BD48A00331C09 /* Hub */; };
+		A3EDD2C92F1BD48A00331C09 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2C82F1BD48A00331C09 /* Tokenizers */; };
+		A3EDD2CB2F1BD48A00331C09 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2CA2F1BD48A00331C09 /* Transformers */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,7 +72,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3EDD2BE2F1B4D9E00331C09 /* Tokenizers in Frameworks */,
+				A3EDD2CB2F1BD48A00331C09 /* Transformers in Frameworks */,
+				A3EDD2C92F1BD48A00331C09 /* Tokenizers in Frameworks */,
+				A3EDD2C72F1BD48A00331C09 /* Hub in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,7 +135,9 @@
 			);
 			name = JustPlayIt;
 			packageProductDependencies = (
-				A3EDD2BD2F1B4D9E00331C09 /* Tokenizers */,
+				A3EDD2C62F1BD48A00331C09 /* Hub */,
+				A3EDD2C82F1BD48A00331C09 /* Tokenizers */,
+				A3EDD2CA2F1BD48A00331C09 /* Transformers */,
 			);
 			productName = JustPlayIt;
 			productReference = A3BE77752F1AC3FE00016F0B /* JustPlayIt.app */;
@@ -216,7 +222,7 @@
 			mainGroup = A3BE776C2F1AC3FE00016F0B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A3EDD2BC2F1B4D9E00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */,
+				A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3BE77762F1AC3FE00016F0B /* Products */;
@@ -642,7 +648,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		A3EDD2BC2F1B4D9E00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+		A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/huggingface/swift-transformers";
 			requirement = {
@@ -653,10 +659,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A3EDD2BD2F1B4D9E00331C09 /* Tokenizers */ = {
+		A3EDD2C62F1BD48A00331C09 /* Hub */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A3EDD2BC2F1B4D9E00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Hub;
+		};
+		A3EDD2C82F1BD48A00331C09 /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
 			productName = Tokenizers;
+		};
+		A3EDD2CA2F1BD48A00331C09 /* Transformers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Transformers;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
