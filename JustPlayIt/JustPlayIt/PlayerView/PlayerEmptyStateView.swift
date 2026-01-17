@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct PlayerEmptyStateView: View {
-	var transcript: String = ""
+	var transcript: AttributedString = ""
 	
 	var body: some View {
 		VStack(spacing: 16) {
-			if !transcript.isEmpty {
+			if !transcript.characters.isEmpty {
 				Text(transcript)
 					.font(.title3)
 					.multilineTextAlignment(.center)

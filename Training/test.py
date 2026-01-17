@@ -2,7 +2,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 import numpy as np
 
-def load_model(model_path="./fine-tuned-music-ner"):
+def load_model(model_path="./models"):
     """Load the fine-tuned model and tokenizer."""
     print(f"Loading model from {model_path}...")
     tokenizer = AutoTokenizer.from_pretrained(model_path)

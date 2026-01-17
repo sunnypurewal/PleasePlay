@@ -56,10 +56,11 @@ def main():
     id2label = {i: label for i, label in enumerate(label_list)}
     
     # Load the tokenizer and model with correct number of labels
-    print("Loading tokenizer and model...")
-    tokenizer = AutoTokenizer.from_pretrained("blaze999/Medical-NER")
+    model_name = "google/mobilebert-uncased"
+    print(f"Loading tokenizer and model from {model_name}...")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForTokenClassification.from_pretrained(
-        "blaze999/Medical-NER",
+        model_name,
         num_labels=len(label_list),
         id2label=id2label,
         label2id=label2id,
@@ -145,9 +146,9 @@ def main():
 
     # Save the fine-tuned model
     print("Saving fine-tuned model...")
-    model.save_pretrained("./fine-tuned-music-ner")
-    tokenizer.save_pretrained("./fine-tuned-music-ner")
-    print("Model saved to './fine-tuned-music-ner'")
+    model.save_pretrained("./model")
+    tokenizer.save_pretrained("./model")
+    print("Model saved to './model'")
 
 if __name__ == "__main__":
     print("Script entry point reached.")

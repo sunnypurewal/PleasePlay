@@ -9,10 +9,17 @@ import SwiftUI
 import AVFoundation
 
 struct PlayerView: View {
-	@StateObject private var speechRecognizer = SpeechRecognizer()
 	@State private var microphonePermissionGranted = false
 	@State private var alreadyPlayedSongs: [String] = [] // Mock data for now
 	@State private var nowPlayingSong: String? = nil
+	@State var recorder: Recorder
+	@State var speechTranscriber: SpokenWordTranscriber
+	
+	init() {
+		let transcriber = SpokenWordTranscriber()
+		recorder = Recorder(transcriber: transcriber)
+		speechTranscriber = transcriber
+	}
 	
 	var body: some View {
 		NavigationStack {
@@ -31,18 +38,18 @@ struct PlayerView: View {
 				if let currentSong = nowPlayingSong {
 					NowPlayingView(currentSong: currentSong)
 				} else {
-					PlayerEmptyStateView(transcript: speechRecognizer.transcript)
+					PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
 				}
 			}
 			.navigationTitle("Player")
 			.onAppear {
 				checkMicrophonePermission()
 			}
-			.onChange(of: microphonePermissionGranted) { _, newValue in
-				if newValue {
-					speechRecognizer.startTranscribing()
-				}
-			}
+//			.onChange(of: microphonePermissionGranted) { _, newValue in
+//				if newValue {
+//					Task { try await recorder.record() }
+//				}
+//			}
 		}
 	}
 	
@@ -70,7 +77,7 @@ struct PlayerView: View {
 		
 		microphonePermissionGranted = isGranted
 		if isGranted {
-			speechRecognizer.startTranscribing()
+			Task { try await recorder.record() }
 		}
 	}
 	
