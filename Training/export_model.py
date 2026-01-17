@@ -24,7 +24,7 @@ def export_model(model_dir):
     Direct PyTorch conversion is used because coremltools dropped direct ONNX support in newer versions.
     """
     
-    model_name = os.path.basename(os.path.normpath(model_dir))
+    model_name = "MusicNER"
     output_mlpackage = f"{model_name}.mlpackage"
     
     print(f"Processing model: {model_dir}")
@@ -61,7 +61,7 @@ def export_model(model_dir):
         max_length=128,
         truncation=True
     )
-    
+    print(inputs)
     input_ids = inputs["input_ids"]
     # CRITICAL FIX: Cast attention mask to float before tracing
     attention_mask = inputs["attention_mask"].float()
@@ -99,7 +99,7 @@ def export_model(model_dir):
             inputs=[input_ids_type, attention_mask_type],
             outputs=[ct.TensorType(name="logits")],
             convert_to="mlprogram",
-            minimum_deployment_target=ct.target.iOS16,
+            minimum_deployment_target=ct.target.iOS26,
             compute_units=ct.ComputeUnit.ALL
         )
         

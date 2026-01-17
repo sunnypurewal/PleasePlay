@@ -36,7 +36,7 @@ final class SpokenWordTranscriber {
 	func setUpTranscriber() async throws {
 		transcriber = SpeechTranscriber(locale: Locale.current,
 										transcriptionOptions: [],
-										reportingOptions: [],
+										reportingOptions: [.fastResults],
 										attributeOptions: [])
 		
 		guard let transcriber else {
@@ -68,13 +68,15 @@ final class SpokenWordTranscriber {
 				for try await case let result in transcriber.results {
 					let text = result.text
 					if result.isFinal {
+						print("FINAL RESULT")
+					}
+					print(String(text.characters))
+					if result.isFinal {
 						finalizedTranscript += text
 						volatileTranscript = ""
-						print(String(finalizedTranscript.characters))
 					} else {
 						volatileTranscript = text
-						print(String(volatileTranscript.characters))
-						// No partial results now
+						volatileTranscript.foregroundColor = .purple.opacity(0.4)
 					}
 				}
 			} catch {
