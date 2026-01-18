@@ -62,6 +62,13 @@ struct PlayerView: View {
 					}
 				}
 			}
+			.task {
+				do {
+					try await predictor.loadModel()
+				} catch {
+					print("Failed to load model: \(error)")
+				}
+			}
 		}
 	}
 	

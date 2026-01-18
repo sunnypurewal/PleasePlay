@@ -33,11 +33,12 @@ def export_model(model_dir):
     # 1. Load Model
     print("Loading PyTorch model...")
     try:
-        # Added fix_mistral_regex=True based on user request/warning
-        tokenizer = AutoTokenizer.from_pretrained(model_dir, local_files_only=True, fix_mistral_regex=True)
-        model = AutoModelForTokenClassification.from_pretrained(model_dir, local_files_only=True)
+        # DIAGNOSTIC STEP: Load the BASE model from Hugging Face Hub instead of the local fine-tuned one.
+        print("--- RUNNING IN DIAGNOSTIC MODE: Using base 'google/mobilebert-uncased' model ---")
+        tokenizer = AutoTokenizer.from_pretrained("google/mobilebert-uncased")
+        model = AutoModelForTokenClassification.from_pretrained("google/mobilebert-uncased", num_labels=5, ignore_mismatched_sizes=True)
         
-        # CRITICAL FIX: Ensure model is in float32 to verify operations like sqrt don't receive int32
+        # CRITICAL FIX: Ensure model is in float32
         model = model.float()
         model.eval()
         
@@ -61,7 +62,6 @@ def export_model(model_dir):
         max_length=128,
         truncation=True
     )
-    print(inputs)
     input_ids = inputs["input_ids"]
     # CRITICAL FIX: Cast attention mask to float before tracing
     attention_mask = inputs["attention_mask"].float()
@@ -99,8 +99,8 @@ def export_model(model_dir):
             inputs=[input_ids_type, attention_mask_type],
             outputs=[ct.TensorType(name="logits")],
             convert_to="mlprogram",
-            minimum_deployment_target=ct.target.iOS26,
-            compute_units=ct.ComputeUnit.ALL
+            minimum_deployment_target=ct.target.iOS16,
+            compute_units=ct.ComputeUnit.CPU_ONLY
         )
         
         # Metadata

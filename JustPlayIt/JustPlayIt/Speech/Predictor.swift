@@ -11,15 +11,24 @@ import Tokenizers
 
 actor Predictor {
 	private var model: MusicNER?
+	private var isLoading = false
 	
-	private func loadModel() async throws {
+	func loadModel() async throws {
+		isLoading = true
 		self.model = try await MusicNER()
+		isLoading = false
 		print("MusicNER model loaded successfully")
 	}
 	
 	func predictEntities(from text: String) async throws -> [String: Any] {
-		if model == nil {
-			try await loadModel()
+		if !isLoading {
+			if model == nil {
+				try await loadModel()
+			}
+		} else {
+			while isLoading {
+				try await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+			}
 		}
 		guard let model else {
 			throw NSError(domain: "Predictor", code: -1, userInfo: [NSLocalizedDescriptionKey: "Model not loaded"])
@@ -34,10 +43,16 @@ actor Predictor {
 		let tokenizer = try await loadBertTokenizer(fromVocabFile: "vocab", withExtension: "txt")
 		let tokens = tokenizer.encode(text: text)
 		print(tokens)
-		print("Text tokenized: \(tokens)")
+		let input_ids = try MLMultiArray(shape: [1,128], dataType: .int32)
+		let attention_mask = try MLMultiArray(shape: [1,128], dataType: .float32)
+		for i in 0..<tokens.count {
+			input_ids[i] = NSNumber(value: tokens[i])
+			attention_mask[i] = 1
+		}
+		
 		print("Input prepared, making prediction")
-		let input = await MusicNERInput(input_ids: try MLMultiArray(tokens), attention_mask: try MLMultiArray(shape: [1,128], dataType: .float32))
-		// TODO: Figure out why coreml model not loading
+		let input = await MusicNERInput(input_ids: input_ids, attention_mask: attention_mask)
+		print(input)
 		let output = try await model.prediction(input: input)
 		print("Prediction made")
 		print(output)
