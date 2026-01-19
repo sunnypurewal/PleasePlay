@@ -2,7 +2,17 @@ import SwiftUI
 import UIKit
 
 struct NowPlayingView: View {
-	let currentSong: String
+	let currentSong: Track
+    var musicPlayer: AppleMusic
+    
+    @State private var isDragging = false
+    @State private var dragValue: TimeInterval = 0
+    
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
 	
 	var body: some View {
 		VStack(spacing: 20) {
@@ -10,35 +20,86 @@ struct NowPlayingView: View {
 				.font(.headline)
 				.foregroundColor(.secondary)
 			
-			// Album Art Placeholder
-			Rectangle()
-				.fill(Color.gray.opacity(0.3))
-				.frame(width: 200, height: 200)
-				.cornerRadius(12)
-				.overlay(
-					Image(systemName: "music.note")
-						.font(.largeTitle)
-						.foregroundColor(.gray)
-				)
+			// Album Art
+            if let artworkURL = currentSong.artworkURL {
+                AsyncImage(url: artworkURL) { image in
+                    image.resizable()
+                } placeholder: {
+                    Rectangle().fill(Color.gray.opacity(0.3))
+                }
+                .frame(width: 200, height: 200)
+                .cornerRadius(12)
+                .shadow(radius: 5)
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 200, height: 200)
+                    .cornerRadius(12)
+                    .overlay(
+                        Image(systemName: "music.note")
+                            .font(.largeTitle)
+                            .foregroundColor(.gray)
+                    )
+            }
 			
-			Text(currentSong)
-				.font(.title3)
-				.fontWeight(.bold)
+			VStack(spacing: 8) {
+                Text(currentSong.title)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                
+                Text(currentSong.artist)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            
+            // Seek Bar
+            VStack(spacing: 5) {
+                Slider(value: Binding(
+                    get: { isDragging ? dragValue : musicPlayer.currentPlaybackTime },
+                    set: { newValue in
+                        dragValue = newValue
+                        musicPlayer.seek(to: newValue)
+                    }
+                ), in: 0...currentSong.duration, onEditingChanged: { editing in
+                    isDragging = editing
+                    if editing {
+                        dragValue = musicPlayer.currentPlaybackTime
+                    }
+                })
+                .accentColor(.primary)
+                
+                HStack {
+                    Text(formatTime(isDragging ? dragValue : musicPlayer.currentPlaybackTime))
+                    Spacer()
+                    Text(formatTime(currentSong.duration))
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding(.horizontal)
 			
 			HStack(spacing: 40) {
-				Button(action: { /* prev */ }) {
-					Image(systemName: "backward.fill")
+                // Stop Button
+				Button(action: { 
+                    musicPlayer.stop()
+                }) {
+					Image(systemName: "stop.fill")
 						.font(.title)
 				}
 				
-				Button(action: { /* play/pause */ }) {
-					Image(systemName: "pause.circle.fill")
+                // Play/Pause Button
+				Button(action: {
+					if musicPlayer.isPlaying {
+						musicPlayer.pause()
+					} else {
+						Task {
+							try? await musicPlayer.unpause()
+						}
+					}
+                }) {
+					Image(systemName: musicPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
 						.font(.system(size: 64))
-				}
-				
-				Button(action: { /* next */ }) {
-					Image(systemName: "forward.fill")
-						.font(.title)
 				}
 			}
 			.foregroundColor(.primary)
@@ -51,5 +112,8 @@ struct NowPlayingView: View {
 }
 
 #Preview {
-	NowPlayingView(currentSong: "Preview Song")
+	NowPlayingView(
+        currentSong: Track(id: UUID(), title: "Preview Song", artist: "Preview Artist", album: "Preview Album", artworkURL: nil, duration: 180),
+        musicPlayer: AppleMusic()
+    )
 }

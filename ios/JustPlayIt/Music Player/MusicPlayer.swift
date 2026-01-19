@@ -20,6 +20,14 @@ struct Track: Identifiable, Sendable {
 /// A generic interface for interacting with different streaming music providers
 /// (e.g., Apple Music, Spotify, Tidal).
 protocol StreamingMusicProvider {
-	/// Plays a specific track.
-	func play(track: Track) async throws
+	/// Plays a specific track by artist and song name.
+	@discardableResult
+	func play(artist: String, song: String) async throws -> Track
+	func pause()
+	var isPlaying: Bool { get }
+	func unpause() async throws
+	func stop()
+    
+    var currentPlaybackTime: TimeInterval { get }
+    func seek(to time: TimeInterval)
 }

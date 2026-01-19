@@ -12,8 +12,8 @@ import Tokenizers
 
 struct PlayerView: View {
 	@State private var microphonePermissionGranted = false
-	@State private var alreadyPlayedSongs: [String] = [] // Mock data for now
-	@State private var nowPlayingSong: String? = nil
+	@State private var alreadyPlayedSongs: [Track] = [] // Mock data for now
+	@State private var nowPlayingSong: Track? = nil
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
 	@State var predictor: Predictor
@@ -41,7 +41,7 @@ struct PlayerView: View {
 				
 				// Content for Empty State vs Now Playing
 				if let currentSong = nowPlayingSong {
-					NowPlayingView(currentSong: currentSong)
+					NowPlayingView(currentSong: currentSong, musicPlayer: musicPlayer)
 				} else {
 					PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
 				}
@@ -64,15 +64,13 @@ struct PlayerView: View {
 							   let woas = output["WoAs"] as? [String],
 							   let artist = artists.first,
 							   let title = woas.first {
-								let track = Track(
-									id: UUID(),
-									title: title,
-									artist: artist,
-									album: "",
-									artworkURL: nil,
-									duration: 0
-								)
-								try await musicPlayer.play(track: track)
+                                
+                                let track = try await musicPlayer.play(artist: artist, song: title)
+                                
+                                await MainActor.run {
+                                    nowPlayingSong = track
+                                    alreadyPlayedSongs.append(track)
+                                }
 							}
 						} catch {
 							print("Prediction error: \(error)")
@@ -80,6 +78,13 @@ struct PlayerView: View {
 					}
 				}
 			}
+            .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
+                if isPlaying {
+                    recorder.pauseRecording()
+                } else {
+                    try? recorder.resumeRecording()
+                }
+            }
 			.task {
 				do {
 					try await predictor.loadModel()
