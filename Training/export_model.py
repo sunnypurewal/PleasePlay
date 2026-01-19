@@ -1,145 +1,27 @@
-import os
-import torch
-import coremltools as ct
-from transformers import AutoTokenizer, AutoModelForTokenClassification
-import shutil
 import numpy as np
+import coremltools as ct
+import tensorflow as tf
 
-# Fix compatibility issue with PyTorch and coremltools
-os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+from transformers import DistilBertTokenizer, TFDistilBertForMaskedLM
 
-class ModelWrapper(torch.nn.Module):
-    """Wrapper to ensure model output is compatible with CoreML conversion."""
-    def __init__(self, model):
-        super().__init__()
-        self.model = model
-    
-    def forward(self, input_ids, attention_mask):
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return outputs.logits
 
-def export_model(model_dir):
-    """
-    Exports a Hugging Face model to CoreML format via PyTorch Tracing.
-    Direct PyTorch conversion is used because coremltools dropped direct ONNX support in newer versions.
-    """
-    
-    model_name = "MusicNER"
-    output_mlpackage = f"{model_name}.mlpackage"
-    
-    print(f"Processing model: {model_dir}")
-    print(f"Output: {output_mlpackage}")
-    
-    # 1. Load Model
-    print("Loading PyTorch model...")
-    try:
-        # DIAGNOSTIC STEP: Load the BASE model from Hugging Face Hub instead of the local fine-tuned one.
-        print("--- RUNNING IN DIAGNOSTIC MODE: Using base 'google/mobilebert-uncased' model ---")
-        tokenizer = AutoTokenizer.from_pretrained("google/mobilebert-uncased")
-        model = AutoModelForTokenClassification.from_pretrained("google/mobilebert-uncased", num_labels=5, ignore_mismatched_sizes=True)
-        
-        # CRITICAL FIX: Ensure model is in float32
-        model = model.float()
-        model.eval()
-        
-        # Wrap the model
-        wrapper = ModelWrapper(model)
-        wrapper = wrapper.float()
-        wrapper.eval()
-        
-    except Exception as e:
-        print(f"Failed to load model from {model_dir}: {e}")
-        return
+tokenizer = DistilBertTokenizer.from_pretrained('distilbert/distilbert-base-uncased')
+distilbert_model = TFDistilBertForMaskedLM.from_pretrained('distilbert/distilbert-base-uncased')
 
-    # 2. Trace Model
-    print("Tracing PyTorch model...")
-    dummy_input_text = ["play", "a", "song", "by", "taylor", "swift"]
-    inputs = tokenizer(
-        dummy_input_text, 
-        return_tensors="pt", 
-        is_split_into_words=True,
-        padding="max_length",
-        max_length=128,
-        truncation=True
-    )
-    input_ids = inputs["input_ids"]
-    # CRITICAL FIX: Cast attention mask to float before tracing
-    attention_mask = inputs["attention_mask"].float()
-    
-    try:
-        with torch.no_grad():
-            traced_model = torch.jit.trace(
-                wrapper,
-                (input_ids, attention_mask),
-                strict=False
-            )
-    except Exception as e:
-        print(f"Tracing failed: {e}")
-        return
-    
-    # 3. Convert to CoreML
-    print("Converting to CoreML...")
-    try:
-        # Define CoreML inputs
-        input_ids_type = ct.TensorType(
-            name="input_ids",
-            shape=(1, 128),
-            dtype=np.int32
-        )
-        
-        # Use float32 for attention mask to match the traced graph
-        attention_mask_type = ct.TensorType(
-            name="attention_mask", 
-            shape=(1, 128),
-            dtype=np.float32 
-        )
-        
-        mlmodel = ct.convert(
-            traced_model,
-            inputs=[input_ids_type, attention_mask_type],
-            outputs=[ct.TensorType(name="logits")],
-            convert_to="mlprogram",
-            minimum_deployment_target=ct.target.iOS16,
-            compute_units=ct.ComputeUnit.CPU_ONLY
-        )
-        
-        # Metadata
-        mlmodel.author = "Automated Converter"
-        mlmodel.short_description = f"CoreML version of {model_name}"
-        # Removed incorrect package_path assignment
-        
-        # Save
-        if os.path.exists(output_mlpackage):
-            shutil.rmtree(output_mlpackage)
-            
-        mlmodel.save(output_mlpackage)
-        print(f"✅ Successfully created {output_mlpackage}")
-        
-    except Exception as e:
-        print(f"❌ CoreML conversion failed: {e}")
 
-def main():
-    target_dir = "model"
-    
-    if not os.path.exists(target_dir):
-        print(f"Directory '{target_dir}' not found.")
-        return
+max_seq_length = 128
+input_shape = (1, max_seq_length) #(batch_size, maximum_sequence_length)
 
-    # path is a model itself?
-    if os.path.exists(os.path.join(target_dir, "config.json")):
-        export_model(target_dir)
-    else:
-        # Iterate over subdirectories
-        print(f"Scanning '{target_dir}' for models...")
-        found = False
-        for item in os.listdir(target_dir):
-            full_path = os.path.join(target_dir, item)
-            if os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, "config.json")):
-                export_model(full_path)
-                found = True
-        
-        if not found:
-            print("No models found. (looked for config.json in subfolders)")
+input_layer = tf.keras.layers.Input(shape=input_shape[1:], dtype=tf.int32, name='input')
 
-if __name__ == "__main__":
-    main()
+prediction_model = distilbert_model(input_layer)
+tf_model = tf.keras.models.Model(inputs=input_layer, outputs=prediction_model)
+
+mlmodel = ct.convert(tf_model)
+
+# Fill the input with zeros to adhere to input_shape
+input_values = np.zeros(input_shape)
+# Store the tokens from our sample sentence into the input
+input_values[0,:8] = np.array(tokenizer.encode("Hello, my dog is cute")).astype(np.int32)
+
+mlmodel.predict({'input':input_values}) # 'input' is the name of our input layer from (3)
