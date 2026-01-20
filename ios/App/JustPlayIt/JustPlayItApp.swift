@@ -35,7 +35,9 @@ struct JustPlayItApp: App {
 	
 	var body: some Scene {
 		WindowGroup {
-			if authManager.isAuthorized {
+            if authManager.isLoading {
+                ProgressView()
+            } else if authManager.isAuthorized {
 				MainTabView()
                     .environment(musicPlayer)
 			} else {

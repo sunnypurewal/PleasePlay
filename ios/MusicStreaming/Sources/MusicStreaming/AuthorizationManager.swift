@@ -21,10 +21,11 @@ public enum StreamingProvider: String, Codable {
 @MainActor
 public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
     @Published public var isAuthorized: Bool = false
+    @Published public var isLoading: Bool = true
     @Published public var currentProvider: StreamingProvider = .none
 
     private var tidalClientId: String = "P7AYqSKY9Slcppll" // Replace with actual ID
-    private var tidalClientSecret: String = "Wnb5SDn6xV2gBz6CRWN3ipJNQ0QcGv3Piudmy8m1lcc=" // Replace with actual Secret
+    private var tidalClientSecret: String = "Wnb5SD6xV2gBz6CRWN3ipJNQ0QcGv3Piudmy8m1lcc=" // Replace with actual Secret
     private let musicPlayer: MusicPlayer
 
 	public init(musicPlayer: MusicPlayer) {
@@ -38,6 +39,7 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
 			scopes: [] // Example scopes
 		)
 		TidalAuth.shared.config(config: config)
+		try? TidalAuth.shared.logout()
         Task {
             await checkAuthorization()
         }
@@ -58,6 +60,7 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
             self.isAuthorized = false
             self.currentProvider = .none
         }
+        self.isLoading = false
     }
 
     public func authorizeAppleMusic() async {
