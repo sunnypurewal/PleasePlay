@@ -55,27 +55,35 @@ public class Tidal: StreamingMusicProvider {
 
     @discardableResult
     public func play(artist: String, song: String) async throws -> Track {
-		let searchTerm = "\(song) \(artist)"
-		let results = try await SearchResultsAPITidal.searchResultsIdGet(id: searchTerm, include: ["tracks"])
-		let trackID = results.data.id
-		let track = try await TracksAPITidal.tracksIdGet(id: trackID)
-		let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
-		player?.load(mediaProduct)
-		player?.play()
-		
-		let newTrack = Track(
-			uuid: UUID(),
-			title: song,
-			artist: artist,
-			album: "",
-			artworkURL: nil,
-			duration: 120,
-			serviceIDs: .init(tidal: trackID)
-		)
-		
-		self.currentTrack = newTrack
-		isPlaying = true
-		return newTrack
+		do {
+			let searchTerm = "\(song) \(artist)"
+			let results = try await SearchResultsAPITidal.searchResultsIdGet(id: searchTerm, explicitFilter: .include, include: ["tracks"])
+			let trackID = results.data.id
+			let track = try await TracksAPITidal.tracksIdGet(id: trackID)
+			let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
+			player?.load(mediaProduct)
+			player?.play()
+			
+			let newTrack = Track(
+				uuid: UUID(),
+				title: song,
+				artist: artist,
+				album: "",
+				artworkURL: nil,
+				duration: 120,
+				serviceIDs: .init(tidal: trackID)
+			)
+			
+			self.currentTrack = newTrack
+			isPlaying = true
+			return newTrack
+		} catch {
+			if let error = error as? HTTPErrorResponse, let data = error.data {
+				let str = String(data: data, encoding: .utf8)
+				print(str)
+			}
+			throw error
+		}
     }
     
 	public func play(id: StreamingServiceIDs) async throws {
