@@ -61,7 +61,13 @@ struct AuthenticationView: View {
 			// Tidal
 			// Tidal branding is typically black and white
 			Button(action: {
-				// TODO: Implement Tidal Auth
+				Task {
+					do {
+						try await authManager.authorizeTidal()
+					} catch {
+						print("Tidal authorization failed: \(error)")
+					}
+				}
 			}) {
 				HStack {
 					// In a real app, you would include the Tidal logo asset here

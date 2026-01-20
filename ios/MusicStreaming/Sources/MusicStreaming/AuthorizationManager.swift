@@ -8,6 +8,7 @@
 import SwiftUI
 import MusicKit
 import Combine
+import Auth
 
 public enum StreamingProvider: String {
 	case appleMusic
@@ -21,10 +22,12 @@ public class AuthorizationManager: ObservableObject {
 	@Published public var isAuthorized: Bool = false
 	@Published public var currentProvider: StreamingProvider = .none
 	
-	private var tidalClientId: String? = "P7AYqSKY9Slcppll" // Replace with actual ID
-	private var tidalClientSecret: String? = "Wnb5SDn6xV2gBz6CRWN3ipJNQ0QcGv3Piudmy8m1lcc=" // Replace with actual Secret
+	private var tidalClientId: String = "P7AYqSKY9Slcppll"
+	private var tidalClientSecret: String = "Wnb5SDn6xV2gBz6CRWN3ipJNQ0QcGv3Piudmy8m1lcc="
 
 	public init() {
+		let config = AuthConfig(clientId: tidalClientId, credentialsKey: tidalClientSecret)
+		TidalAuth.shared.config(config: config)
 		Task {
 			await checkAuthorization()
 		}
@@ -36,16 +39,9 @@ public class AuthorizationManager: ObservableObject {
 		if status == .authorized {
 			isAuthorized = true
 			currentProvider = .appleMusic
-		} else if tidalClientId != nil && tidalClientSecret != nil {
-			// In a real app, you would check for a stored Tidal token
-			// For now, we'll assume if credentials are provided, we can "authorize"
-			// by attempting to get a token silently or checking for a stored one.
-			// This part will require the Tidal Auth SDK.
-            // FIXED: Do not auto-authorize just because credentials exist.
-			// isAuthorized = true // Placeholder
-			// currentProvider = .tidal
-            isAuthorized = false
-            currentProvider = .none
+		} else if TidalAuth.shared.isUserLoggedIn {
+            isAuthorized = true
+            currentProvider = .tidal
 		} else {
 			isAuthorized = false
 			currentProvider = .none
@@ -60,12 +56,7 @@ public class AuthorizationManager: ObservableObject {
 		}
 	}
 
-	public func authorizeTidal(clientId: String, clientSecret: String) async {
-		self.tidalClientId = clientId
-		self.tidalClientSecret = clientSecret
-		// In a real app, you would now trigger the Tidal login flow
-		// and on success, store the tokens securely.
-		// For now, we'll just update the authorization status.
+	public func authorizeTidal() async throws {
 		isAuthorized = true
 		currentProvider = .tidal
 	}
