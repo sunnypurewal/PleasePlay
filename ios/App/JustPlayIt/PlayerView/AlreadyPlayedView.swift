@@ -1,4 +1,5 @@
 import SwiftUI
+import MusicStreaming
 
 struct AlreadyPlayedView: View {
     @Environment(AppleMusic.self) var musicPlayer
@@ -21,7 +22,11 @@ struct AlreadyPlayedView: View {
                 List(songs) { song in
                     Button(action: {
                         Task {
-                            try? await musicPlayer.play(track: song)
+                            if let appleMusicID = song.appleMusicID {
+                                _ = try? await musicPlayer.play(trackID: appleMusicID)
+                            } else {
+                                _ = try? await musicPlayer.play(artist: song.artist, song: song.title)
+                            }
                         }
                     }) {
                         VStack(alignment: .leading) {

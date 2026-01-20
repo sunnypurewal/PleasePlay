@@ -9,8 +9,8 @@ import Foundation
 import AVFoundation
 import SwiftUI
 
-class Recorder {
-	private var outputContinuation: AsyncStream<AVAudioPCMBuffer>.Continuation? = nil
+public class Recorder {
+	private var outputContinuation: AsyncStream<AudioData>.Continuation? = nil
 	private let audioEngine: AVAudioEngine
 	private let transcriber: SpokenWordTranscriber
 	var playerNode: AVAudioPlayerNode?
@@ -18,7 +18,7 @@ class Recorder {
 	var file: AVAudioFile?
 	private let url: URL
 	
-	init(transcriber: SpokenWordTranscriber) {
+	public init(transcriber: SpokenWordTranscriber) {
 		audioEngine = AVAudioEngine()
 		self.transcriber = transcriber
 		self.url = FileManager.default.temporaryDirectory
@@ -26,7 +26,7 @@ class Recorder {
 			.appendingPathExtension(for: .wav)
 	}
 	
-	func record() async throws {
+	public func record() async throws {
 		guard await isAuthorized() else {
 			print("user denied mic permission")
 			return
@@ -37,11 +37,11 @@ class Recorder {
 		try await transcriber.setUpTranscriber()
 		
 		for await input in try await audioStream() {
-			try await self.transcriber.streamAudioToTranscriber(input)
+			try await self.transcriber.streamAudioToTranscriber(input.buffer)
 		}
 	}
 	
-	func stopRecording() async throws {
+	public func stopRecording() async throws {
 		audioEngine.stop()
 		
 		try await transcriber.finishTranscribing()
@@ -52,11 +52,11 @@ class Recorder {
 		
 	}
 	
-	func pauseRecording() {
+	public func pauseRecording() {
 		audioEngine.pause()
 	}
 	
-	func resumeRecording() throws {
+	public func resumeRecording() throws {
 		try audioEngine.start()
 	}
 #if os(iOS)
@@ -67,20 +67,22 @@ class Recorder {
 	}
 #endif
 	
-	private func audioStream() async throws -> AsyncStream<AVAudioPCMBuffer> {
+	private func audioStream() async throws -> AsyncStream<AudioData> {
 		try setupAudioEngine()
 		audioEngine.inputNode.installTap(onBus: 0,
 										 bufferSize: 4096,
 										 format: audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] (buffer, time) in
 			guard let self else { return }
 			writeBufferToDisk(buffer: buffer)
-			self.outputContinuation?.yield(buffer)
+            if let copy = buffer.copy() as? AVAudioPCMBuffer {
+                self.outputContinuation?.yield(AudioData(buffer: copy, time: time))
+            }
 		}
 		
 		audioEngine.prepare()
 		try audioEngine.start()
 		
-		return AsyncStream(AVAudioPCMBuffer.self, bufferingPolicy: .unbounded) {
+		return AsyncStream(AudioData.self, bufferingPolicy: .unbounded) {
 			continuation in
 			outputContinuation = continuation
 		}
@@ -94,7 +96,7 @@ class Recorder {
 		audioEngine.inputNode.removeTap(onBus: 0)
 	}
 	
-	func playRecording() {
+	public func playRecording() {
 		guard let file else {
 			return
 		}
@@ -122,7 +124,7 @@ class Recorder {
 		}
 	}
 	
-	func stopPlaying() {
+	public func stopPlaying() {
 		audioEngine.stop()
 	}
 }

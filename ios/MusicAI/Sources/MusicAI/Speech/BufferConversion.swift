@@ -6,7 +6,7 @@ Conversion code for audio inputs.
 */
 
 import Foundation
-import AVFoundation
+@preconcurrency import AVFoundation
 
 class BufferConverter {
     enum Error: Swift.Error {
@@ -39,12 +39,14 @@ class BufferConverter {
         }
         
         var nsError: NSError?
-        var bufferProcessed = false
+        
+        final class BoolBox: @unchecked Sendable { var value = false }
+        let bufferProcessed = BoolBox()
         
         let status = converter.convert(to: conversionBuffer, error: &nsError) { packetCount, inputStatusPointer in
-            defer { bufferProcessed = true } // This closure can be called multiple times, but it only offers a single buffer.
-            inputStatusPointer.pointee = bufferProcessed ? .noDataNow : .haveData
-            return bufferProcessed ? nil : buffer
+            defer { bufferProcessed.value = true } // This closure can be called multiple times, but it only offers a single buffer.
+            inputStatusPointer.pointee = bufferProcessed.value ? .noDataNow : .haveData
+            return bufferProcessed.value ? nil : buffer
         }
         
         guard status != .error else {

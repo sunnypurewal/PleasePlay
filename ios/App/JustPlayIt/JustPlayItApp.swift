@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import MusicStreaming
 
 @main
 struct JustPlayItApp: App {

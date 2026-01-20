@@ -1,5 +1,5 @@
 import SwiftUI
-import UIKit
+import MusicStreaming
 
 struct NowPlayingView: View {
 	let currentSong: Track

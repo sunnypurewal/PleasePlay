@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import MusicStreaming
 
 struct MainTabView: View {
     @Query private var alreadyPlayedSongs: [Track]

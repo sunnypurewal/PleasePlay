@@ -10,7 +10,8 @@ import Speech
 import SwiftUI
 
 @Observable
-final class SpokenWordTranscriber {
+@MainActor
+public final class SpokenWordTranscriber {
 	private var inputSequence: AsyncStream<AnalyzerInput>?
 	private var inputBuilder: AsyncStream<AnalyzerInput>.Continuation?
 	private var transcriber: SpeechTranscriber?
@@ -25,20 +26,20 @@ final class SpokenWordTranscriber {
 	var converter = BufferConverter()
 	var downloadProgress: Progress?
 	
-	private(set) var volatileTranscript: AttributedString = ""
-	private(set) var finalizedTranscript: AttributedString = ""
+	public private(set) var volatileTranscript: AttributedString = ""
+	public private(set) var finalizedTranscript: AttributedString = ""
 	
-	func resetTranscripts() {
+	public func resetTranscripts() {
 		volatileTranscript = ""
 		finalizedTranscript = ""
 	}
 	
 	static let locale = Locale(components: .init(languageCode: .english, script: nil, languageRegion: .unitedStates))
 	
-	init() {
+	public init() {
 	}
 	
-	func setUpTranscriber() async throws {
+	public func setUpTranscriber() async throws {
 		transcriber = SpeechTranscriber(locale: Locale.current,
 										transcriptionOptions: [],
 										reportingOptions: [.fastResults],
@@ -68,9 +69,10 @@ final class SpokenWordTranscriber {
 		
 		guard let inputSequence else { return }
 		
-		recognizerTask = Task {
+		recognizerTask = Task { [weak self] in
 			do {
 				for try await case let result in transcriber.results {
+                    guard let self else { break }
 					let text = result.text
 					if result.isFinal {
 						print("FINAL RESULT")
@@ -92,7 +94,7 @@ final class SpokenWordTranscriber {
 		try await analyzer?.start(inputSequence: inputSequence)
 	}
 	
-	func streamAudioToTranscriber(_ buffer: AVAudioPCMBuffer) async throws {
+	public func streamAudioToTranscriber(_ buffer: AVAudioPCMBuffer) async throws {
 		guard let inputBuilder, let analyzerFormat else {
 			throw TranscriptionError.invalidAudioDataType
 		}

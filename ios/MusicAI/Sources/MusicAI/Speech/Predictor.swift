@@ -9,19 +9,22 @@ import Foundation
 import CoreML
 import Tokenizers
 
-actor Predictor {
+@available(iOS 26.0, *)
+public actor Predictor {
 	private var model: MusicNER?
 	private var isLoading = false
+    
+    public init() {}
 	
-	func loadModel() async throws {
+	public func loadModel() async throws {
 		guard model == nil else { return }
 		isLoading = true
-		self.model = try await MusicNER()
+		self.model = try MusicNER()
 		isLoading = false
 		print("MusicNER model loaded successfully")
 	}
 	
-	func predictEntities(from text: String) async throws -> [String: Any] {
+	public func predictEntities(from text: String) async throws -> [String: Any] {
 		if !isLoading {
 			if model == nil {
 				try await loadModel()
@@ -68,7 +71,7 @@ actor Predictor {
 		}
 		
 		print("Input prepared (tokens: \(filledCount)), making prediction")
-		let input = await MusicNERInput(input_ids: input_ids, attention_mask: attention_mask)
+		let input = MusicNERInput(input_ids: input_ids, attention_mask: attention_mask)
 		let output = try await model.prediction(input: input)
 		print("Prediction made")
 		

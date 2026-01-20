@@ -11,6 +11,7 @@ import CoreML
 import SwiftData
 import Tokenizers
 import MusicStreaming
+import MusicAI
 
 struct PlayerView: View {
     @Environment(\.modelContext) private var modelContext

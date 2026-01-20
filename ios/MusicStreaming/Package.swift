@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "MusicStreaming",
     platforms: [
-        .iOS(.v18),
+        .iOS("26.0"),
         .macOS(.v14)
     ],
     products: [

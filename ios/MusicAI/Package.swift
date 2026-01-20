@@ -7,7 +7,7 @@ let package = Package(
     name: "MusicAI",
     platforms: [
         .macOS(.v14),
-        .iOS(.v18)
+        .iOS("26.0")
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
