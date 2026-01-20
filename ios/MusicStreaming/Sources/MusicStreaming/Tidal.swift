@@ -1,7 +1,7 @@
 import Foundation
 @preconcurrency import Auth
 @preconcurrency import Player
-@_exported import TidalAPI
+@preconcurrency import TidalAPI
 @preconcurrency import EventProducer
 import Observation
 
@@ -42,7 +42,7 @@ public class Tidal: StreamingMusicProvider {
     }
     
     @MainActor
-    private func setup(clientId: String, clientSecret: String) async {
+    private func setup(clientId: String, clientSecret: String) {
         let config = AuthConfig(clientId: clientId, clientSecret: clientSecret, credentialsKey: "tidal_credentials")
         TidalAuth.shared.config(config: config)
         
@@ -50,35 +50,32 @@ public class Tidal: StreamingMusicProvider {
         let eventSender = TidalEventSender()
         
         self.player = Player.bootstrap(playerListener: self.listener!, credentialsProvider: credentialsProvider, eventSender: eventSender)
-        
-        // OpenAPIClientAPI.credentialsProvider = credentialsProvider
+		OpenAPIClientAPI.credentialsProvider = credentialsProvider
     }
 
     @discardableResult
     public func play(artist: String, song: String) async throws -> Track {
-        // let response = try await SearchResultsAPI.search(query: "\(artist) \(song)", limit: 1)
-        
-        // guard let item = response.data?.items?.first,
-        //       let trackResource = item.item?.asTracksResourceObject,
-        //       let trackId = trackResource.id else {
-        //     throw TidalError.songNotFound
-        // }
-
-        // let tidalTrack = try await TracksAPI.getTrack(trackId: trackId)
-        
-        // let track = Track(
-        //     title: tidalTrack.data?.title ?? "",
-        //     artist: tidalTrack.data?.artists?.first?.name ?? "",
-        //     album: tidalTrack.data?.album?.title ?? "",
-        //     artworkURL: URL(string: tidalTrack.data?.album?.imageCover ?? ""),
-        //     duration: tidalTrack.data?.duration ?? 0,
-        //     serviceIDs: .init(tidal: tidalTrack.data?.id)
-        // )
-        
-        // try await play(trackID: trackId)
-        // self.currentTrack = track
-        // return track
-        throw TidalError.notImplemented
+		let searchTerm = "\(song) \(artist)"
+		let results = try await SearchResultsAPITidal.searchResultsIdGet(id: searchTerm, include: ["tracks"])
+		let trackID = results.data.id
+		let track = try await TracksAPITidal.tracksIdGet(id: trackID)
+		let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
+		player?.load(mediaProduct)
+		player?.play()
+		
+		let newTrack = Track(
+			uuid: UUID(),
+			title: song,
+			artist: artist,
+			album: "",
+			artworkURL: nil,
+			duration: 120,
+			serviceIDs: .init(tidal: trackID)
+		)
+		
+		self.currentTrack = newTrack
+		isPlaying = true
+		return newTrack
     }
     
 	public func play(id: StreamingServiceIDs) async throws {

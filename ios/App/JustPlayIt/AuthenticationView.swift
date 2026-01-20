@@ -21,8 +21,6 @@ struct AuthenticationView: View {
 				.padding(.bottom, 40)
 			
 			// Apple Music
-			// Apple doesn't provide a specific SwiftUI "Connect to Apple Music" button API,
-			// but we can style one to look native.
 			Button(action: {
 				Task {
 					await authManager.authorizeAppleMusic()
@@ -42,7 +40,6 @@ struct AuthenticationView: View {
 			}
 			
 			// Spotify
-			// Spotify utilizes a specific green color #1DB954
 			Button(action: {
 				// TODO: Implement Spotify Auth
 			}) {
@@ -59,13 +56,12 @@ struct AuthenticationView: View {
 			}
 			
 			// Tidal
-			// Tidal branding is typically black and white
 			Button(action: {
 				Task {
 					do {
 						try await authManager.authorizeTidal()
 					} catch {
-						print("Tidal authorization failed: \(error)")
+						print("Error authorizing Tidal: \(error.localizedDescription)")
 					}
 				}
 			}) {
@@ -89,5 +85,5 @@ struct AuthenticationView: View {
 
 #Preview {
 	AuthenticationView()
-		.environmentObject(AuthorizationManager())
+		.environmentObject(AuthorizationManager(musicPlayer: MusicPlayer()))
 }

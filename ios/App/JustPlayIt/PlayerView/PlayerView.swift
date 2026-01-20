@@ -64,7 +64,6 @@ struct PlayerView: View {
 							let title = woas.first ?? ""
 							
 							if !artist.isEmpty || !title.isEmpty {
-                                
                                 let track = try await musicPlayer.play(artist: artist, song: title)
                                 
                                 await MainActor.run {

@@ -70,46 +70,57 @@ public protocol StreamingMusicProvider {
 @Observable
 @MainActor
 public class MusicPlayer {
-    public let provider: StreamingMusicProvider
+    public var provider: StreamingMusicProvider?
     
-    public init(provider: StreamingMusicProvider = AppleMusic()) {
+    public init() {
+        self.provider = nil
+    }
+    
+    public func setProvider(_ provider: StreamingMusicProvider) {
         self.provider = provider
     }
     
     @discardableResult
     public func play(artist: String, song: String) async throws -> Track {
-        try await provider.play(artist: artist, song: song)
+        guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+        return try await provider.play(artist: artist, song: song)
     }
     
 	public func play(id: StreamingServiceIDs) async throws {
+        guard let provider = provider else { throw MusicPlayerError.providerNotSet }
         try await provider.play(id: id)
     }
     
     public func pause() {
-        provider.pause()
+        provider?.pause()
     }
     
     public func unpause() async throws {
+        guard let provider = provider else { return }
         try await provider.unpause()
     }
     
     public func stop() {
-        provider.stop()
+        provider?.stop()
     }
     
     public func seek(to time: TimeInterval) {
-        provider.seek(to: time)
+        provider?.seek(to: time)
     }
     
     public var isPlaying: Bool {
-        provider.isPlaying
+        provider?.isPlaying ?? false
     }
     
     public var currentTrack: Track? {
-        provider.currentTrack
+        provider?.currentTrack
     }
     
     public var currentPlaybackTime: TimeInterval {
-        provider.currentPlaybackTime
+        provider?.currentPlaybackTime ?? 0
     }
+}
+
+public enum MusicPlayerError: Error {
+    case providerNotSet
 }
