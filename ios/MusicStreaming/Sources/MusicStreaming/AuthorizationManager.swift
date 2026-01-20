@@ -9,7 +9,7 @@ import SwiftUI
 import MusicKit
 import Combine
 
-enum StreamingProvider: String {
+public enum StreamingProvider: String {
 	case appleMusic
 	case spotify
 	case tidal
@@ -17,17 +17,17 @@ enum StreamingProvider: String {
 }
 
 @MainActor
-class AuthorizationManager: ObservableObject {
-	@Published var isAuthorized: Bool = false
-	@Published var currentProvider: StreamingProvider = .none
+public class AuthorizationManager: ObservableObject {
+	@Published public var isAuthorized: Bool = false
+	@Published public var currentProvider: StreamingProvider = .none
 	
-	init() {
+	public init() {
 		Task {
 			await checkAuthorization()
 		}
 	}
 	
-	func checkAuthorization() async {
+	public func checkAuthorization() async {
 		// Check Apple Music
 		let status = MusicAuthorization.currentStatus
 		if status == .authorized {
@@ -41,7 +41,7 @@ class AuthorizationManager: ObservableObject {
 		}
 	}
 	
-	func authorizeAppleMusic() async {
+	public func authorizeAppleMusic() async {
 		let status = await MusicAuthorization.request()
 		if status == .authorized {
 			isAuthorized = true

@@ -6,25 +6,25 @@
 //
 
 import Foundation
-import MusicKit
+@preconcurrency import MusicKit
 import Observation
 
+@MainActor
 @Observable
-class AppleMusic: StreamingMusicProvider {
+public class AppleMusic: StreamingMusicProvider {
     private let player = ApplicationMusicPlayer.shared
-    var isPlaying: Bool = false
-    var currentTrack: Track?
-    var currentPlaybackTime: TimeInterval = 0
+    public var isPlaying: Bool = false
+    public var currentTrack: Track?
+    public var currentPlaybackTime: TimeInterval = 0
     private var playbackMonitorTask: Task<Void, Never>?
 
-    // ... existing play/pause/stop/unpause updated to call startMonitoring/stopMonitoring ...
+    public init() {}
     
     @discardableResult
-    func play(artist: String, song: String) async throws -> Track {
-        // ... (existing search logic remains same) ...
+    public func play(artist: String, song: String) async throws -> Track {
         // Search Apple Music Catalog for the song using title and artist
         let searchTerm = "\(song) \(artist)"
-        var searchRequest = MusicCatalogSearchRequest(term: searchTerm, types: [Song.self])
+        let searchRequest = MusicCatalogSearchRequest(term: searchTerm, types: [Song.self])
         
         // Execute the search
         let response: MusicCatalogSearchResponse
@@ -70,70 +70,68 @@ class AppleMusic: StreamingMusicProvider {
             appleMusicID: songItem.id.rawValue
         )
         
-        await MainActor.run { 
-            self.currentTrack = newTrack
-            isPlaying = true
-            startMonitoring() 
-        }
+        self.currentTrack = newTrack
+        isPlaying = true
+        startMonitoring()
         
         return newTrack
     }
     
-    func play(track: Track) async throws {
-        if let appleMusicID = track.appleMusicID {
-            // Play by ID
-            do {
-                let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(appleMusicID))
-                let response = try await request.response()
-                
-                if let songItem = response.items.first {
-                    player.queue = [songItem]
-                    try await player.play()
-                    
-                    await MainActor.run {
-                        self.currentTrack = track
-                        isPlaying = true
-                        startMonitoring()
-                    }
-                    return
-                }
-            } catch {
-                print("Failed to play by ID: \(error). Falling back to search.")
-            }
-        }
+    public func play(trackID: String) async throws {
+        // Play by ID
+        let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(trackID))
+        let response = try await request.response()
         
-        // Fallback to search if ID missing or not found
-        _ = try await play(artist: track.artist, song: track.title)
-        
-        // Update currentTrack to the passed track
-        await MainActor.run {
-            self.currentTrack = track
+        guard let songItem = response.items.first else {
+            throw AppleMusicError.songNotFound
         }
+
+        player.queue = [songItem]
+        try await player.play()
+        
+        let playingTrack = Track(
+            uuid: UUID(),
+            title: songItem.title,
+            artist: songItem.artistName,
+            album: songItem.albumTitle ?? "",
+            artworkURL: songItem.artwork?.url(width: 300, height: 300),
+            duration: songItem.duration ?? 0,
+            appleMusicID: songItem.id.rawValue
+        )
+        
+        self.currentTrack = playingTrack
+        isPlaying = true
+        startMonitoring()
     }
 	
-	func pause() {
+	public func pause() {
 		player.pause()
-        Task { @MainActor in isPlaying = false; stopMonitoring() }
+        isPlaying = false
+        stopMonitoring()
 	}
 	
-	func unpause() async throws {
+	public func unpause() async throws {
 		try await player.play()
-        await MainActor.run { isPlaying = true; startMonitoring() }
+        isPlaying = true
+        startMonitoring()
 	}
 	
-	func stop() {
+	public func stop() {
 		player.stop()
 		player.playbackTime = 0
-        Task { @MainActor in isPlaying = false; currentPlaybackTime = 0; stopMonitoring() }
+        isPlaying = false
+        currentPlaybackTime = 0
+        stopMonitoring()
 	}
     
-    func seek(to time: TimeInterval) {
+    public func seek(to time: TimeInterval) {
         player.playbackTime = time
         currentPlaybackTime = time
     }
     
     private func startMonitoring() {
         stopMonitoring()
+        // Keep this task on the main actor so all accesses to self are serialized.
         playbackMonitorTask = Task { @MainActor in
             while true {
                 try? await Task.sleep(for: .seconds(0.5))
@@ -143,7 +141,6 @@ class AppleMusic: StreamingMusicProvider {
                 if status == .stopped || status == .paused || status == .interrupted {
                     if self.isPlaying {
                         self.isPlaying = false
-                        // We can break here, but let's just stop monitoring to be safe
                         self.stopMonitoring()
                         break
                     }
@@ -162,3 +159,4 @@ class AppleMusic: StreamingMusicProvider {
 enum AppleMusicError: Error {
     case songNotFound
 }
+

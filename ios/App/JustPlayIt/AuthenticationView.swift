@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MusicStreaming
 
 struct AuthenticationView: View {
 	@EnvironmentObject var authManager: AuthorizationManager

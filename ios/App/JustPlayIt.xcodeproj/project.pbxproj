@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A3EDD2C72F1BD48A00331C09 /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2C62F1BD48A00331C09 /* Hub */; };
-		A3EDD2C92F1BD48A00331C09 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2C82F1BD48A00331C09 /* Tokenizers */; };
-		A3EDD2CB2F1BD48A00331C09 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = A3EDD2CA2F1BD48A00331C09 /* Transformers */; };
+		A3375BA22F1FEB2100D3D9B0 /* MusicStreaming in Frameworks */ = {isa = PBXBuildFile; productRef = A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */; };
+		A3375BA52F1FEEE000D3D9B0 /* MusicAI in Frameworks */ = {isa = PBXBuildFile; productRef = A3375BA42F1FEEE000D3D9B0 /* MusicAI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,7 +52,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Speech/Tokenizer.swift,
 			);
 			target = A3BE77742F1AC3FE00016F0B /* JustPlayIt */;
 		};
@@ -85,9 +83,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A3EDD2CB2F1BD48A00331C09 /* Transformers in Frameworks */,
-				A3EDD2C92F1BD48A00331C09 /* Tokenizers in Frameworks */,
-				A3EDD2C72F1BD48A00331C09 /* Hub in Frameworks */,
+				A3375BA52F1FEEE000D3D9B0 /* MusicAI in Frameworks */,
+				A3375BA22F1FEB2100D3D9B0 /* MusicStreaming in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,9 +146,8 @@
 			);
 			name = JustPlayIt;
 			packageProductDependencies = (
-				A3EDD2C62F1BD48A00331C09 /* Hub */,
-				A3EDD2C82F1BD48A00331C09 /* Tokenizers */,
-				A3EDD2CA2F1BD48A00331C09 /* Transformers */,
+				A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */,
+				A3375BA42F1FEEE000D3D9B0 /* MusicAI */,
 			);
 			productName = JustPlayIt;
 			productReference = A3BE77752F1AC3FE00016F0B /* JustPlayIt.app */;
@@ -236,7 +232,8 @@
 			mainGroup = A3BE776C2F1AC3FE00016F0B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */,
+				A3375BA02F1FEB2100D3D9B0 /* XCLocalSwiftPackageReference "../MusicStreaming" */,
+				A3375BA32F1FEEDF00D3D9B0 /* XCLocalSwiftPackageReference "../MusicAI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3BE77762F1AC3FE00016F0B /* Products */;
@@ -683,32 +680,25 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/huggingface/swift-transformers";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.6;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		A3375BA02F1FEB2100D3D9B0 /* XCLocalSwiftPackageReference "../MusicStreaming" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../MusicStreaming;
 		};
-/* End XCRemoteSwiftPackageReference section */
+		A3375BA32F1FEEDF00D3D9B0 /* XCLocalSwiftPackageReference "../MusicAI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../MusicAI;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		A3EDD2C62F1BD48A00331C09 /* Hub */ = {
+		A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
-			productName = Hub;
+			productName = MusicStreaming;
 		};
-		A3EDD2C82F1BD48A00331C09 /* Tokenizers */ = {
+		A3375BA42F1FEEE000D3D9B0 /* MusicAI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
-			productName = Tokenizers;
-		};
-		A3EDD2CA2F1BD48A00331C09 /* Transformers */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A3EDD2C52F1BD48A00331C09 /* XCRemoteSwiftPackageReference "swift-transformers" */;
-			productName = Transformers;
+			productName = MusicAI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

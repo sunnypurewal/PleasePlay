@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
+   <FileRef
+      location = "group:MusicAI">
+   </FileRef>
    <Group
       location = "group:MusicStreaming"
       name = "MusicStreaming">
@@ -26,6 +29,15 @@
             name = "MusicStreaming">
             <FileRef
                location = "group:MusicStreaming.swift">
+            </FileRef>
+            <FileRef
+               location = "group:AppleMusic.swift">
+            </FileRef>
+            <FileRef
+               location = "group:MusicPlayer.swift">
+            </FileRef>
+            <FileRef
+               location = "group:AuthorizationManager.swift">
             </FileRef>
          </Group>
       </Group>
