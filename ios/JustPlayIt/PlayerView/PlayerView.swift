@@ -8,16 +8,16 @@
 import SwiftUI
 import AVFoundation
 import CoreML
+import SwiftData
 import Tokenizers
 
 struct PlayerView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(AppleMusic.self) var musicPlayer
 	@State private var microphonePermissionGranted = false
-	@State private var alreadyPlayedSongs: [Track] = [] // Mock data for now
-	@State private var nowPlayingSong: Track? = nil
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
 	@State var predictor: Predictor
-	@State var musicPlayer = AppleMusic()
 
 	init() {
 		let transcriber = SpokenWordTranscriber()
@@ -34,13 +34,10 @@ struct PlayerView: View {
 					MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
 				}
 				
-				// Already Played Section
-				AlreadyPlayedView(songs: alreadyPlayedSongs)
-				
 				Spacer()
 				
 				// Content for Empty State vs Now Playing
-				if let currentSong = nowPlayingSong {
+				if let currentSong = musicPlayer.currentTrack {
 					NowPlayingView(currentSong: currentSong, musicPlayer: musicPlayer)
 				} else {
 					PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
@@ -48,7 +45,9 @@ struct PlayerView: View {
 			}
 			.navigationTitle("Player")
 			.onAppear {
-				checkMicrophonePermission()
+				if !microphonePermissionGranted {
+					checkMicrophonePermission()
+				}
 			}
 			.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
 				let text = String(new.characters)
@@ -60,16 +59,18 @@ struct PlayerView: View {
 							speechTranscriber.resetTranscripts()
 							print(output)
 							
-							if let artists = output["Artists"] as? [String],
-							   let woas = output["WoAs"] as? [String],
-							   let artist = artists.first,
-							   let title = woas.first {
+							let artists = output["Artists"] as? [String] ?? []
+							let woas = output["WoAs"] as? [String] ?? []
+							
+							let artist = artists.first ?? ""
+							let title = woas.first ?? ""
+							
+							if !artist.isEmpty || !title.isEmpty {
                                 
                                 let track = try await musicPlayer.play(artist: artist, song: title)
                                 
                                 await MainActor.run {
-                                    nowPlayingSong = track
-                                    alreadyPlayedSongs.append(track)
+                                    modelContext.insert(track)
                                 }
 							}
 						} catch {
@@ -118,7 +119,7 @@ struct PlayerView: View {
 		}
 		
 		microphonePermissionGranted = isGranted
-		if isGranted {
+		if isGranted && !musicPlayer.isPlaying {
 			Task { try await recorder.record() }
 		}
 	}
@@ -142,4 +143,5 @@ struct PlayerView: View {
 
 #Preview {
 	PlayerView()
+        .environment(AppleMusic())
 }

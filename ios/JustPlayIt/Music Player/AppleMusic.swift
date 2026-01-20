@@ -13,6 +13,7 @@ import Observation
 class AppleMusic: StreamingMusicProvider {
     private let player = ApplicationMusicPlayer.shared
     var isPlaying: Bool = false
+    var currentTrack: Track?
     var currentPlaybackTime: TimeInterval = 0
     private var playbackMonitorTask: Task<Void, Never>?
 
@@ -24,7 +25,6 @@ class AppleMusic: StreamingMusicProvider {
         // Search Apple Music Catalog for the song using title and artist
         let searchTerm = "\(song) \(artist)"
         var searchRequest = MusicCatalogSearchRequest(term: searchTerm, types: [Song.self])
-        searchRequest.limit = 1
         
         // Execute the search
         let response: MusicCatalogSearchResponse
@@ -59,19 +59,56 @@ class AppleMusic: StreamingMusicProvider {
         // Set the queue and play
         player.queue = [songItem]
         try await player.play()
-        await MainActor.run { 
-            isPlaying = true
-            startMonitoring() 
-        }
         
-        return Track(
-            id: UUID(),
+        let newTrack = Track(
+            uuid: UUID(),
             title: songItem.title,
             artist: songItem.artistName,
             album: songItem.albumTitle ?? "",
             artworkURL: songItem.artwork?.url(width: 300, height: 300),
-            duration: songItem.duration ?? 0
+            duration: songItem.duration ?? 0,
+            appleMusicID: songItem.id.rawValue
         )
+        
+        await MainActor.run { 
+            self.currentTrack = newTrack
+            isPlaying = true
+            startMonitoring() 
+        }
+        
+        return newTrack
+    }
+    
+    func play(track: Track) async throws {
+        if let appleMusicID = track.appleMusicID {
+            // Play by ID
+            do {
+                let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(appleMusicID))
+                let response = try await request.response()
+                
+                if let songItem = response.items.first {
+                    player.queue = [songItem]
+                    try await player.play()
+                    
+                    await MainActor.run {
+                        self.currentTrack = track
+                        isPlaying = true
+                        startMonitoring()
+                    }
+                    return
+                }
+            } catch {
+                print("Failed to play by ID: \(error). Falling back to search.")
+            }
+        }
+        
+        // Fallback to search if ID missing or not found
+        _ = try await play(artist: track.artist, song: track.title)
+        
+        // Update currentTrack to the passed track
+        await MainActor.run {
+            self.currentTrack = track
+        }
     }
 	
 	func pause() {

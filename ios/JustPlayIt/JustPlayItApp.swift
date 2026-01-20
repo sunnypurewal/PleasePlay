@@ -11,9 +11,11 @@ import SwiftData
 @main
 struct JustPlayItApp: App {
 	@StateObject private var authManager = AuthorizationManager()
+    @State private var musicPlayer = AppleMusic()
 	
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([
+            Track.self
 		])
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 		
@@ -27,7 +29,8 @@ struct JustPlayItApp: App {
 	var body: some Scene {
 		WindowGroup {
 			if authManager.isAuthorized {
-				PlayerView()
+				MainTabView()
+                    .environment(musicPlayer)
 			} else {
 				AuthenticationView()
 					.environmentObject(authManager)

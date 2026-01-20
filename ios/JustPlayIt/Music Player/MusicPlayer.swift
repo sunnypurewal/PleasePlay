@@ -7,14 +7,36 @@
 
 import Foundation
 
+import SwiftData
+
 /// Represents a music track with basic metadata.
-struct Track: Identifiable, Sendable {
-	let id: UUID
-	let title: String
-	let artist: String
-	let album: String
-	let artworkURL: URL?
-	let duration: TimeInterval
+@Model
+class Track {
+	var uuid: UUID
+	var title: String
+	var artist: String
+	var album: String
+	var artworkURL: URL?
+	var duration: TimeInterval
+    
+    // Provider specific IDs
+    var appleMusicID: String?
+    var spotifyID: String?
+    var youTubeID: String?
+    var tidalID: String?
+    
+    init(uuid: UUID = UUID(), title: String, artist: String, album: String, artworkURL: URL? = nil, duration: TimeInterval, appleMusicID: String? = nil, spotifyID: String? = nil, youTubeID: String? = nil, tidalID: String? = nil) {
+        self.uuid = uuid
+        self.title = title
+        self.artist = artist
+        self.album = album
+        self.artworkURL = artworkURL
+        self.duration = duration
+        self.appleMusicID = appleMusicID
+        self.spotifyID = spotifyID
+        self.youTubeID = youTubeID
+        self.tidalID = tidalID
+    }
 }
 
 /// A generic interface for interacting with different streaming music providers
@@ -23,8 +45,12 @@ protocol StreamingMusicProvider {
 	/// Plays a specific track by artist and song name.
 	@discardableResult
 	func play(artist: String, song: String) async throws -> Track
+    
+    func play(track: Track) async throws
+    
 	func pause()
 	var isPlaying: Bool { get }
+    var currentTrack: Track? { get }
 	func unpause() async throws
 	func stop()
     

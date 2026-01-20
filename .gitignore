@@ -1,3 +1,8 @@
+*.parquet.gz
+venv/
+.env/
+env/
+*.p8
 ios_tokenizer/
 model/
 *.mlpackage/

@@ -113,7 +113,7 @@ struct NowPlayingView: View {
 
 #Preview {
 	NowPlayingView(
-        currentSong: Track(id: UUID(), title: "Preview Song", artist: "Preview Artist", album: "Preview Album", artworkURL: nil, duration: 180),
+        currentSong: Track(uuid: UUID(), title: "Preview Song", artist: "Preview Artist", album: "Preview Album", artworkURL: nil, duration: 180),
         musicPlayer: AppleMusic()
     )
 }

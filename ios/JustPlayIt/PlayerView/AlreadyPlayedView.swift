@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AlreadyPlayedView: View {
+    @Environment(AppleMusic.self) var musicPlayer
     let songs: [Track]
     
     var body: some View {
@@ -18,10 +19,21 @@ struct AlreadyPlayedView: View {
                 .frame(height: 150)
             } else {
                 List(songs) { song in
-                    VStack(alignment: .leading) {
-                        Text(song.title).font(.body)
-                        Text(song.artist).font(.caption).foregroundColor(.secondary)
+                    Button(action: {
+                        Task {
+                            try? await musicPlayer.play(track: song)
+                        }
+                    }) {
+                        VStack(alignment: .leading) {
+                            Text(song.title)
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                            Text(song.artist)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    .buttonStyle(.plain)
                 }
                 .listStyle(.plain)
             }
@@ -31,7 +43,8 @@ struct AlreadyPlayedView: View {
 
 #Preview {
     AlreadyPlayedView(songs: [
-        Track(id: UUID(), title: "Shake It Off", artist: "Taylor Swift", album: "1989", artworkURL: nil, duration: 200),
-        Track(id: UUID(), title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200)
+        Track(uuid: UUID(), title: "Shake It Off", artist: "Taylor Swift", album: "1989", artworkURL: nil, duration: 200),
+        Track(uuid: UUID(), title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200)
     ])
+    .environment(AppleMusic())
 }

@@ -14,6 +14,7 @@ actor Predictor {
 	private var isLoading = false
 	
 	func loadModel() async throws {
+		guard model == nil else { return }
 		isLoading = true
 		self.model = try await MusicNER()
 		isLoading = false
