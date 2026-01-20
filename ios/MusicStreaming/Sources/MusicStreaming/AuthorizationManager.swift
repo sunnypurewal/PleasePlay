@@ -34,7 +34,7 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
 		let config = AuthConfig(
 			clientId: tidalClientId,
 			clientSecret: tidalClientSecret,
-			credentialsKey: "auth-storage", // Key for storing credentials in Keychain
+			credentialsKey: "tidal_credentials", // Key for storing credentials in Keychain
 			scopes: [] // Example scopes
 		)
 		TidalAuth.shared.config(config: config)
@@ -45,14 +45,16 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
 
     public func checkAuthorization() async {
         // Check for stored provider and credentials
-        // For now, default to checking Apple Music
-        let status = MusicAuthorization.currentStatus
-        if status == .authorized {
+        let appleMusicStatus = MusicAuthorization.currentStatus
+        if appleMusicStatus == .authorized {
             self.isAuthorized = true
             self.currentProvider = .appleMusic
             self.musicPlayer.setProvider(AppleMusic())
+        } else if TidalAuth.shared.isUserLoggedIn {
+            self.isAuthorized = true
+            self.currentProvider = .tidal
+            self.musicPlayer.setProvider(Tidal(clientId: tidalClientId, clientSecret: tidalClientSecret))
         } else {
-            // In a real app, check for stored Tidal/Spotify tokens
             self.isAuthorized = false
             self.currentProvider = .none
         }
