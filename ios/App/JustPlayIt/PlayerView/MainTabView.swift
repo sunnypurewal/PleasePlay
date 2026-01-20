@@ -9,26 +9,30 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            TabView {
-                PlayerView()
-                    .tabItem {
-                        Label("Home", systemImage: "house.fill")
+            ZStack(alignment: .bottom) {
+                TabView {
+                    PlayerView()
+                        .tabItem {
+                            Label("Home", systemImage: "house.fill")
+                        }
+                    
+                    NavigationStack {
+                        AlreadyPlayedView(songs: alreadyPlayedSongs)
+                            .navigationTitle("History")
                     }
+                    .tabItem {
+                        Label("History", systemImage: "clock.fill")
+                    }
+                }
                 
-                NavigationStack {
-                    AlreadyPlayedView(songs: alreadyPlayedSongs)
-                        .navigationTitle("History")
-                }
-                .tabItem {
-                    Label("History", systemImage: "clock.fill")
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
                 if let currentSong = musicPlayer.currentTrack {
                     MiniPlayerView(currentSong: currentSong, musicPlayer: musicPlayer)
                         .onTapGesture {
                             showPlayer = true
                         }
+                        // Add padding to lift the mini player above the tab bar.
+                        // 49pt is the standard height for a tab bar.
+                        .padding(.bottom, 49)
                 }
             }
         }
