@@ -29,6 +29,19 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		A3375AF72F1FE92800D3D9B0 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		A3BE77752F1AC3FE00016F0B /* JustPlayIt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JustPlayIt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3BE77862F1AC3FE00016F0B /* JustPlayItTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JustPlayItTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,6 +138,7 @@
 				A3BE77712F1AC3FE00016F0B /* Sources */,
 				A3BE77722F1AC3FE00016F0B /* Frameworks */,
 				A3BE77732F1AC3FE00016F0B /* Resources */,
+				A3375AF72F1FE92800D3D9B0 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);

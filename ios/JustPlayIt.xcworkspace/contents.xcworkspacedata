@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <Group
+      location = "group:MusicStreaming"
+      name = "MusicStreaming">
+      <Group
+         location = "group:Tests"
+         name = "Tests">
+         <Group
+            location = "group:MusicStreamingTests"
+            name = "MusicStreamingTests">
+            <FileRef
+               location = "group:MusicStreamingTests.swift">
+            </FileRef>
+         </Group>
+      </Group>
+      <FileRef
+         location = "group:Package.swift">
+      </FileRef>
+      <Group
+         location = "group:Sources"
+         name = "Sources">
+         <Group
+            location = "group:MusicStreaming"
+            name = "MusicStreaming">
+            <FileRef
+               location = "group:MusicStreaming.swift">
+            </FileRef>
+         </Group>
+      </Group>
+   </Group>
+   <FileRef
+      location = "group:App/JustPlayIt.xcodeproj">
+   </FileRef>
+</Workspace>

@@ -52,6 +52,17 @@
                ReferencedContainer = "container:JustPlayIt.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A3375AE92F1FE92800D3D9B0"
+               BuildableName = "MusicStreamingTests.xctest"
+               BlueprintName = "MusicStreamingTests"
+               ReferencedContainer = "container:JustPlayIt.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
