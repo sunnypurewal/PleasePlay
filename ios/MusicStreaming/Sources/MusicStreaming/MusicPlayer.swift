@@ -9,6 +9,20 @@ import Foundation
 
 import SwiftData
 
+public struct StreamingServiceIDs: Codable, Hashable {
+    public var appleMusic: String?
+    public var spotify: String?
+    public var youtube: String?
+    public var tidal: String?
+    
+    public init(appleMusic: String? = nil, spotify: String? = nil, youtube: String? = nil, tidal: String? = nil) {
+        self.appleMusic = appleMusic
+        self.spotify = spotify
+        self.youtube = youtube
+        self.tidal = tidal
+    }
+}
+
 /// Represents a music track with basic metadata.
 @Model
 public class Track {
@@ -20,22 +34,16 @@ public class Track {
 	public var duration: TimeInterval
     
     // Provider specific IDs
-    public var appleMusicID: String?
-    public var spotifyID: String?
-    public var youTubeID: String?
-    public var tidalID: String?
+    public var serviceIDs: StreamingServiceIDs
     
-    public init(uuid: UUID = UUID(), title: String, artist: String, album: String, artworkURL: URL? = nil, duration: TimeInterval, appleMusicID: String? = nil, spotifyID: String? = nil, youTubeID: String? = nil, tidalID: String? = nil) {
+    public init(uuid: UUID = UUID(), title: String, artist: String, album: String, artworkURL: URL? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init()) {
         self.uuid = uuid
         self.title = title
         self.artist = artist
         self.album = album
         self.artworkURL = artworkURL
         self.duration = duration
-        self.appleMusicID = appleMusicID
-        self.spotifyID = spotifyID
-        self.youTubeID = youTubeID
-        self.tidalID = tidalID
+        self.serviceIDs = serviceIDs
     }
 }
 
@@ -47,7 +55,7 @@ public protocol StreamingMusicProvider {
 	@discardableResult
 	func play(artist: String, song: String) async throws -> Track
     
-    func play(trackID: String) async throws
+    func play(id: StreamingServiceIDs) async throws
     
 	func pause()
 	var isPlaying: Bool { get }
@@ -59,11 +67,12 @@ public protocol StreamingMusicProvider {
     func seek(to time: TimeInterval)
 }
 
+@Observable
 @MainActor
 public class MusicPlayer {
     public let provider: StreamingMusicProvider
     
-    public init(provider: StreamingMusicProvider) {
+    public init(provider: StreamingMusicProvider = AppleMusic()) {
         self.provider = provider
     }
     
@@ -72,8 +81,8 @@ public class MusicPlayer {
         try await provider.play(artist: artist, song: song)
     }
     
-    public func play(trackID: String) async throws {
-        try await provider.play(trackID: trackID)
+	public func play(id: StreamingServiceIDs) async throws {
+        try await provider.play(id: id)
     }
     
     public func pause() {

@@ -12,7 +12,7 @@ import MusicStreaming
 @main
 struct JustPlayItApp: App {
 	@StateObject private var authManager = AuthorizationManager()
-    @State private var musicPlayer = AppleMusic()
+    @State private var musicPlayer = MusicPlayer()
 	
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([

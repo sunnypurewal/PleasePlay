@@ -67,7 +67,7 @@ public class AppleMusic: StreamingMusicProvider {
             album: songItem.albumTitle ?? "",
             artworkURL: songItem.artwork?.url(width: 300, height: 300),
             duration: songItem.duration ?? 0,
-            appleMusicID: songItem.id.rawValue
+            serviceIDs: .init(appleMusic: songItem.id.rawValue)
         )
         
         self.currentTrack = newTrack
@@ -77,8 +77,11 @@ public class AppleMusic: StreamingMusicProvider {
         return newTrack
     }
     
-    public func play(trackID: String) async throws {
+    public func play(id: StreamingServiceIDs) async throws {
         // Play by ID
+		guard let trackID = id.appleMusic else {
+			throw AppleMusicError.songNotFound
+		}
         let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(trackID))
         let response = try await request.response()
         
@@ -96,7 +99,7 @@ public class AppleMusic: StreamingMusicProvider {
             album: songItem.albumTitle ?? "",
             artworkURL: songItem.artwork?.url(width: 300, height: 300),
             duration: songItem.duration ?? 0,
-            appleMusicID: songItem.id.rawValue
+            serviceIDs: .init(appleMusic: songItem.id.rawValue)
         )
         
         self.currentTrack = playingTrack

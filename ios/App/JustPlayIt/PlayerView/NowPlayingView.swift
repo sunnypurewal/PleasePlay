@@ -3,7 +3,7 @@ import MusicStreaming
 
 struct NowPlayingView: View {
 	let currentSong: Track
-    var musicPlayer: AppleMusic
+    var musicPlayer: MusicPlayer
     
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
@@ -114,6 +114,6 @@ struct NowPlayingView: View {
 #Preview {
 	NowPlayingView(
         currentSong: Track(uuid: UUID(), title: "Preview Song", artist: "Preview Artist", album: "Preview Album", artworkURL: nil, duration: 180),
-        musicPlayer: AppleMusic()
+        musicPlayer: MusicPlayer()
     )
 }

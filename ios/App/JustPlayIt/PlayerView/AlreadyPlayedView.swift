@@ -2,7 +2,7 @@ import SwiftUI
 import MusicStreaming
 
 struct AlreadyPlayedView: View {
-    @Environment(AppleMusic.self) var musicPlayer
+    @Environment(MusicPlayer.self) var musicPlayer
     let songs: [Track]
     
     var body: some View {
@@ -22,11 +22,7 @@ struct AlreadyPlayedView: View {
                 List(songs) { song in
                     Button(action: {
                         Task {
-                            if let appleMusicID = song.appleMusicID {
-                                _ = try? await musicPlayer.play(trackID: appleMusicID)
-                            } else {
-                                _ = try? await musicPlayer.play(artist: song.artist, song: song.title)
-                            }
+							_ = try? await musicPlayer.play(id: song.serviceIDs)
                         }
                     }) {
                         VStack(alignment: .leading) {
@@ -51,5 +47,5 @@ struct AlreadyPlayedView: View {
         Track(uuid: UUID(), title: "Shake It Off", artist: "Taylor Swift", album: "1989", artworkURL: nil, duration: 200),
         Track(uuid: UUID(), title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200)
     ])
-    .environment(AppleMusic())
+    .environment(MusicPlayer())
 }

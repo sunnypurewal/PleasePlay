@@ -39,6 +39,9 @@
             <FileRef
                location = "group:AuthorizationManager.swift">
             </FileRef>
+            <FileRef
+               location = "group:Tidal.swift">
+            </FileRef>
          </Group>
       </Group>
    </Group>

@@ -15,7 +15,7 @@ import MusicAI
 
 struct PlayerView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(AppleMusic.self) var musicPlayer
+    @Environment(MusicPlayer.self) var musicPlayer
 	@State private var microphonePermissionGranted = false
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
@@ -39,11 +39,7 @@ struct PlayerView: View {
 				Spacer()
 				
 				// Content for Empty State vs Now Playing
-				if let currentSong = musicPlayer.currentTrack {
-					NowPlayingView(currentSong: currentSong, musicPlayer: musicPlayer)
-				} else {
-					PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
-				}
+				PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
 			}
 			.navigationTitle("Player")
 			.onAppear {
@@ -131,12 +127,18 @@ struct PlayerView: View {
 			AVAudioApplication.requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
+					if granted {
+						Task { try? await self.recorder.record() }
+					}
 				}
 			}
 		} else {
 			AVAudioSession.sharedInstance().requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
+					if granted {
+						Task { try? await self.recorder.record() }
+					}
 				}
 			}
 		}
@@ -145,5 +147,5 @@ struct PlayerView: View {
 
 #Preview {
 	PlayerView()
-        .environment(AppleMusic())
+        .environment(MusicPlayer())
 }
