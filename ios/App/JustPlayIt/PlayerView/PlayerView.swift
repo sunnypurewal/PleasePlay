@@ -23,6 +23,7 @@ struct PlayerView: View {
 	@State var predictor: Predictor
     @State private var searchResults: [Track] = []
     @State private var isSearching = false
+	@State private var hasAppeared = false
 
 	init() {
 		let transcriber = SpokenWordTranscriber()
@@ -38,7 +39,7 @@ struct PlayerView: View {
 				MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
 			}
 			
-            if !musicPlayer.isPlaying && musicPlayer.isUserPaused {
+            if !musicPlayer.isPlaying && (musicPlayer.isUserPaused || musicPlayer.currentTrack == nil) {
                 MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
             }
 			
@@ -100,11 +101,12 @@ struct PlayerView: View {
 					.listStyle(.plain)
 				}
 			} else {
-				PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
+				PlayerEmptyStateView(recorder: recorder, transcript: speechTranscriber.finalizedTranscript, isRecording: recorder.isRecording)
 			}
 		}
 		.onAppear {
-			checkMicrophonePermission()
+			checkMicrophonePermission(shouldStartListening: !hasAppeared)
+			hasAppeared = true
 		}
 		.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
 			let text = String(new.characters)
@@ -175,7 +177,7 @@ struct PlayerView: View {
 		}
 	}
 	
-	private func checkMicrophonePermission() {
+	private func checkMicrophonePermission(shouldStartListening: Bool) {
 		let isGranted: Bool
 		if #available(iOS 17.0, *) {
 			switch AVAudioApplication.shared.recordPermission {
@@ -198,7 +200,7 @@ struct PlayerView: View {
 		}
 		
 		microphonePermissionGranted = isGranted
-		if isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled {
+		if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled {
 			Task { 
                 try await recorder.record()
             }

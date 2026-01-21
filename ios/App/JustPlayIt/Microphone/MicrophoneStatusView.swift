@@ -15,33 +15,36 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
             HStack {
                 Spacer()
                 
-                if recorder.isRecording {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 8, height: 8)
-                            .scaleEffect(pulseScale)
-                            .onAppear {
-                                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-                                    pulseScale = 1.5
+                Button(action: { Task { try? await recorder.toggleRecording() } }) {
+                    if recorder.isRecording {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 8, height: 8)
+                                .scaleEffect(pulseScale)
+                                .onAppear {
+                                    withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                                        pulseScale = 1.5
+                                    }
                                 }
-                            }
-                        Text("Microphone is listening")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(Color.secondary.opacity(0.5))
-                            .frame(width: 8, height: 8)
-                        Text("Microphone is not listening")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.secondary)
+                            Text("Microphone is listening")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.secondary.opacity(0.5))
+                                .frame(width: 8, height: 8)
+                            Text("Microphone is not listening")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
+                .buttonStyle(.plain)
                 
                 Button(action: { Task { try? await recorder.toggleRecording() } }) {
                     Image(systemName: recorder.isRecording ? "mic.fill" : "mic.slash.fill")
