@@ -219,11 +219,46 @@ struct DiscoverView: View {
 
     @MainActor
     private func addToHistory(from result: MusicRecognitionResult) {
-        let serviceIDs: [MusicService: String]
+        let recognizedDate = result.recognizedAt
+        var serviceIDs: [MusicService: String] = [:]
         if let storefrontId = result.storefrontId {
-            serviceIDs = [.appleMusic: storefrontId]
+            serviceIDs[.appleMusic] = storefrontId
+        }
+
+        // Build a predicate that SwiftData supports
+        let descriptor: FetchDescriptor<PlayedTrack>
+        if let storefrontId = result.storefrontId {
+            let capturedStorefrontId = storefrontId
+            descriptor = FetchDescriptor(
+                predicate: #Predicate { track in
+                    track.appleMusicID == capturedStorefrontId
+                }
+            )
         } else {
-            serviceIDs = [:]
+            let title = result.title
+            let artist = result.artist
+            let album = result.album ?? "Unknown Album"
+            descriptor = FetchDescriptor(
+                predicate: #Predicate { track in
+                    track.title == title && track.artist == artist && track.album == album
+                }
+            )
+        }
+
+        do {
+            if let existingTrack = try modelContext.fetch(descriptor).first {
+                existingTrack.recognizedByShazam = true
+                existingTrack.recognizedAt = recognizedDate
+                existingTrack.recognizedHistory.append(recognizedDate)
+                // Keep appleMusicID in sync if available
+                if let amId = result.storefrontId {
+                    existingTrack.appleMusicID = amId
+                    existingTrack.serviceIDs[.appleMusic] = amId
+                }
+                return
+            }
+        } catch {
+            errorMessage = "Failed to save recognized track."
         }
 
         let track = PlayedTrack(
@@ -233,12 +268,15 @@ struct DiscoverView: View {
             artworkURL: result.artworkUrl,
             duration: 0,
             serviceIDs: serviceIDs,
-            lastPlayedAt: result.recognizedAt,
+            lastPlayedAt: recognizedDate,
             playCount: 0,
             playHistory: [],
             recognizedByShazam: true,
-            recognizedAt: result.recognizedAt
+            recognizedAt: recognizedDate,
+            recognizedHistory: [recognizedDate]
         )
+        // Ensure appleMusicID is set (constructor handles it from serviceIDs)
+        track.appleMusicID = result.storefrontId ?? track.appleMusicID
         modelContext.insert(track)
     }
 }
