@@ -3,7 +3,7 @@ import MusicStreaming
 
 struct NowPlayingView: View {
 	let currentSong: Track
-    var musicPlayer: MusicPlayer
+    @Bindable var musicPlayer: MusicPlayer
     
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
@@ -108,6 +108,10 @@ struct NowPlayingView: View {
 		.background(Material.regular)
 		.cornerRadius(20, corners: [.topLeft, .topRight])
 		.shadow(radius: 5)
+        .onChange(of: currentSong.serviceIDs) { _, _ in
+            isDragging = false
+            dragValue = 0
+        }
 	}
 }
 
