@@ -69,9 +69,27 @@ public class Recorder {
 	
 	private func audioStream() async throws -> AsyncStream<AudioData> {
 		try setupAudioEngine()
-		audioEngine.inputNode.installTap(onBus: 0,
+        
+        let inputNode = audioEngine.inputNode
+        let format = inputNode.outputFormat(forBus: 0)
+        
+        // Check if the format is valid (Simulator workaround)
+        let tapFormat: AVAudioFormat
+        if format.sampleRate == 0 || format.channelCount == 0 {
+            // Fallback to a standard format if the input node reports invalid data
+            if let standardFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1) {
+                tapFormat = standardFormat
+            } else {
+                // If even standard format fails, return empty stream (or throw, but let's be safe)
+                return AsyncStream { _ in }
+            }
+        } else {
+            tapFormat = format
+        }
+        
+		inputNode.installTap(onBus: 0,
 										 bufferSize: 4096,
-										 format: audioEngine.inputNode.outputFormat(forBus: 0)) { [weak self] (buffer, time) in
+										 format: tapFormat) { [weak self] (buffer, time) in
 			guard let self else { return }
 			writeBufferToDisk(buffer: buffer)
             if let copy = buffer.copy() as? AVAudioPCMBuffer {
@@ -89,11 +107,21 @@ public class Recorder {
 	}
 	
 	private func setupAudioEngine() throws {
-		let inputSettings = audioEngine.inputNode.inputFormat(forBus: 0).settings
+        let inputNode = audioEngine.inputNode
+        var format = inputNode.outputFormat(forBus: 0)
+        
+        // Use standard format settings if the node's format is invalid
+        if format.sampleRate == 0 || format.channelCount == 0 {
+             if let standardFormat = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1) {
+                 format = standardFormat
+             }
+        }
+        
+		let inputSettings = format.settings
 		self.file = try AVAudioFile(forWriting: url,
 									settings: inputSettings)
 		
-		audioEngine.inputNode.removeTap(onBus: 0)
+		inputNode.removeTap(onBus: 0)
 	}
 	
 	public func playRecording() {

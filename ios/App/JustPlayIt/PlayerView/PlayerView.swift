@@ -20,6 +20,8 @@ struct PlayerView: View {
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
 	@State var predictor: Predictor
+    @State private var searchResults: [Track] = []
+    @State private var isSearching = false
 
 	init() {
 		let transcriber = SpokenWordTranscriber()
@@ -39,7 +41,63 @@ struct PlayerView: View {
 				Spacer()
 				
 				// Content for Empty State vs Now Playing
-				PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
+                if isSearching {
+                    ProgressView("Searching...")
+                    Spacer()
+                } else if !searchResults.isEmpty {
+                    VStack(alignment: .leading) {
+                        Text("Search Results")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+						List(searchResults, id: \.serviceIDs) { track in
+                            Button(action: {
+                                Task {
+                                    try? await musicPlayer.play(id: track.serviceIDs)
+                                    await MainActor.run {
+                                        saveTrack(track)
+                                    }
+                                }
+                            }) {
+                                HStack {
+                                    if let url = track.artworkURL {
+                                        AsyncImage(url: url) { image in
+                                            image.resizable()
+                                        } placeholder: {
+                                            Color.gray
+                                        }
+                                        .frame(width: 50, height: 50)
+                                        .cornerRadius(4)
+                                    } else {
+                                        Image(systemName: "music.note")
+                                            .frame(width: 50, height: 50)
+                                            .background(Color.secondary.opacity(0.1))
+                                            .cornerRadius(4)
+                                    }
+                                    
+                                    VStack(alignment: .leading) {
+                                        Text(track.title)
+                                            .font(.headline)
+                                        Text(track.artist)
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
+                                        Image(systemName: "speaker.wave.3.fill")
+                                            .foregroundColor(.accentColor)
+                                            .font(.caption)
+                                    }
+                                }
+                            }
+                        }
+                        .listStyle(.plain)
+                    }
+                } else {
+                    PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
+                }
 			}
 			.navigationTitle("Player")
 			.onAppear {
@@ -62,16 +120,33 @@ struct PlayerView: View {
 							
 							let artist = artists.first ?? ""
 							let title = woas.first ?? ""
+                            
+                            let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
+                            let searchQuery = query.isEmpty ? text : query
 							
-							if !artist.isEmpty || !title.isEmpty {
-                                let track = try await musicPlayer.play(artist: artist, song: title)
+							if !searchQuery.isEmpty {
+                                isSearching = true
+                                // Perform search
+                                async let searchTask = musicPlayer.search(query: searchQuery)
+                                
+                                var playedTrack: Track?
+                                if !artist.isEmpty || !title.isEmpty {
+                                    playedTrack = try? await musicPlayer.play(artist: artist, song: title)
+                                }
+                                
+                                let results = try? await searchTask
                                 
                                 await MainActor.run {
-                                    modelContext.insert(track)
+                                    if let track = playedTrack {
+                                        saveTrack(track)
+                                    }
+                                    self.searchResults = results ?? []
+                                    self.isSearching = false
                                 }
 							}
 						} catch {
 							print("Prediction error: \(error)")
+                            isSearching = false
 						}
 					}
 				}
@@ -142,6 +217,36 @@ struct PlayerView: View {
 			}
 		}
 	}
+    
+    private func saveTrack(_ track: Track) {
+        let title = track.title
+        let artist = track.artist
+        
+        let descriptor = FetchDescriptor<PlayedTrack>(
+            predicate: #Predicate { $0.title == title && $0.artist == artist }
+        )
+        
+        do {
+            let existingTracks = try modelContext.fetch(descriptor)
+            if let existingTrack = existingTracks.first {
+                existingTrack.playCount += 1
+                existingTrack.playHistory.append(Date())
+                existingTrack.lastPlayedAt = Date()
+            } else {
+                let playedTrack = PlayedTrack(
+                    title: track.title,
+                    artist: track.artist,
+                    album: track.album,
+                    artworkURL: track.artworkURL,
+                    duration: track.duration,
+                    serviceIDs: track.serviceIDs.toMusicServiceDictionary()
+                )
+                modelContext.insert(playedTrack)
+            }
+        } catch {
+            print("Failed to save track: \(error)")
+        }
+    }
 }
 
 #Preview {

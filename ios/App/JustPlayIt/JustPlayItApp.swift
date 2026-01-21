@@ -22,7 +22,7 @@ struct JustPlayItApp: App {
 
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([
-            Track.self
+            PlayedTrack.self
 		])
 		let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 		

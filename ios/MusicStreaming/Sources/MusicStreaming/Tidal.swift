@@ -65,7 +65,6 @@ public class Tidal: StreamingMusicProvider {
 			player?.play()
 			
 			let newTrack = Track(
-				uuid: UUID(),
 				title: song,
 				artist: artist,
 				album: "",
@@ -86,17 +85,26 @@ public class Tidal: StreamingMusicProvider {
 		}
     }
     
-	public func play(id: StreamingServiceIDs) async throws {
-        guard let player = player else { throw TidalError.playerNotInitialized }
-		guard let trackID = id.tidal else { throw TidalError.songNotFound }
-        
-        let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
-        player.load(mediaProduct)
-        player.play()
-    }
-    
-    public func pause() {
-        player?.pause()
+	    public func play(id: StreamingServiceIDs) async throws {
+	        guard let player = player else { throw TidalError.playerNotInitialized }
+			guard let trackID = id.tidal else { throw TidalError.songNotFound }
+	        
+	        let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
+	        player.load(mediaProduct)
+	        player.play()
+	    }
+	    
+	        public func search(query: String) async throws -> [Track] {
+	    
+	            // Skipping implementation for now
+	    
+	            return []
+	    
+	        }
+	    
+	        
+	    
+	        public func pause() {        player?.pause()
     }
     
     public func unpause() async throws {

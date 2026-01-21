@@ -12,9 +12,10 @@ import Auth
 import AuthenticationServices
 
 public enum StreamingProvider: String, Codable {
-	case appleMusic
-	case spotify
-	case tidal
+	case appleMusic = "APPLE_MUSIC"
+	case spotify = "SPOTIFY"
+	case tidal = "TIDAL"
+	case youtube = "YOUTUBE"
 	case none
 }
 

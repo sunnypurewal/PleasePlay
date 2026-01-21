@@ -61,7 +61,6 @@ public class AppleMusic: StreamingMusicProvider {
         try await player.play()
         
         let newTrack = Track(
-            uuid: UUID(),
             title: songItem.title,
             artist: songItem.artistName,
             album: songItem.albumTitle ?? "",
@@ -93,7 +92,6 @@ public class AppleMusic: StreamingMusicProvider {
         try await player.play()
         
         let playingTrack = Track(
-            uuid: UUID(),
             title: songItem.title,
             artist: songItem.artistName,
             album: songItem.albumTitle ?? "",
@@ -105,6 +103,22 @@ public class AppleMusic: StreamingMusicProvider {
         self.currentTrack = playingTrack
         isPlaying = true
         startMonitoring()
+    }
+    
+    public func search(query: String) async throws -> [Track] {
+        let searchRequest = MusicCatalogSearchRequest(term: query, types: [Song.self])
+        let response = try await searchRequest.response()
+        
+        return response.songs.map { songItem in
+            Track(
+                title: songItem.title,
+                artist: songItem.artistName,
+                album: songItem.albumTitle ?? "",
+                artworkURL: songItem.artwork?.url(width: 300, height: 300),
+                duration: songItem.duration ?? 0,
+                serviceIDs: .init(appleMusic: songItem.id.rawValue)
+            )
+        }
     }
 	
 	public func pause() {

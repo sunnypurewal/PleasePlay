@@ -3,7 +3,7 @@ import SwiftData
 import MusicStreaming
 
 struct MainTabView: View {
-    @Query private var alreadyPlayedSongs: [Track]
+    @Query(sort: \PlayedTrack.lastPlayedAt, order: .reverse) private var historySongs: [PlayedTrack]
     @Environment(MusicPlayer.self) var musicPlayer
     @State private var showPlayer = false
     
@@ -17,7 +17,7 @@ struct MainTabView: View {
                         }
                     
                     NavigationStack {
-                        AlreadyPlayedView(songs: alreadyPlayedSongs)
+                        HistoryView(songs: historySongs)
                             .navigationTitle("History")
                     }
                     .tabItem {
