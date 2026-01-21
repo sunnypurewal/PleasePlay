@@ -19,12 +19,13 @@ struct HistoryView: View {
                 }
                 .frame(height: 150)
             } else {
-                                List(songs) { song in
-                                    Button(action: {
-                                        Task {
-                							_ = try? await musicPlayer.play(id: StreamingServiceIDs(song.serviceIDs))
-                                        }
-                                    }) {                        HStack {
+                List(songs) { song in
+                    Button(action: {
+                        Task {
+                            _ = try? await musicPlayer.play(id: StreamingServiceIDs(song.serviceIDs))
+                        }
+                    }) {
+                        HStack {
                             if let url = song.artworkURL {
                                 AsyncImage(url: url) { image in
                                     image
@@ -58,6 +59,7 @@ struct HistoryView: View {
                                 }
                             }
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
