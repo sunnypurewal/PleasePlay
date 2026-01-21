@@ -68,6 +68,7 @@ public protocol StreamingMusicProvider {
 @MainActor
 public class MusicPlayer {
 	public var provider: StreamingMusicProvider?
+	public var isUserPaused: Bool = false
 	
 	public init() {
 		self.provider = nil
@@ -80,11 +81,13 @@ public class MusicPlayer {
 	@discardableResult
 	public func play(artist: String, song: String) async throws -> Track {
 		guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+		isUserPaused = false
 		return try await provider.play(artist: artist, song: song)
 	}
 	
 	public func play(id: StreamingServiceIDs) async throws {
 		guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+		isUserPaused = false
 		try await provider.play(id: id)
 	}
 	
@@ -94,14 +97,17 @@ public class MusicPlayer {
 	}
 	
 	public func pause() {
+		isUserPaused = true
 		provider?.pause()
 	}
 	public func unpause() async throws {
 		guard let provider = provider else { return }
+		isUserPaused = false
 		try await provider.unpause()
 	}
 	
 	public func stop() {
+		isUserPaused = true
 		provider?.stop()
 	}
 	

@@ -38,7 +38,7 @@ struct PlayerView: View {
 				MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
 			}
 			
-            if !musicPlayer.isPlaying {
+            if !musicPlayer.isPlaying && musicPlayer.isUserPaused {
                 MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
             }
 			
