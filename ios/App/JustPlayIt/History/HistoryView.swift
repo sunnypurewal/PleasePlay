@@ -54,6 +54,15 @@ struct HistoryView: View {
                                     Text(song.artist)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
+                                    if song.recognizedByShazam {
+                                        Text("Recognized")
+                                            .font(.caption2.weight(.semibold))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.blue.opacity(0.15))
+                                            .foregroundStyle(.blue)
+                                            .clipShape(Capsule())
+                                    }
                                     Spacer()
                                     Text("\(song.playCount) plays")
                                         .font(.caption2)
