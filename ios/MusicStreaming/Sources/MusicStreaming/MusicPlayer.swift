@@ -32,9 +32,6 @@ public class Track {
     // Provider specific IDs
     public var serviceIDs: StreamingServiceIDs
     
-    public var playCount: Int = 0
-    public var playHistory: [Date] = []
-    
     public init(title: String, artist: String, album: String, artworkURL: URL? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init()) {
         self.title = title
         self.artist = artist

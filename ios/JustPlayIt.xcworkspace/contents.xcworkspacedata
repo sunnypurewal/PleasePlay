@@ -28,6 +28,9 @@
             location = "group:MusicStreaming"
             name = "MusicStreaming">
             <FileRef
+               location = "group:YouTube.swift">
+            </FileRef>
+            <FileRef
                location = "group:MusicStreaming.swift">
             </FileRef>
             <FileRef

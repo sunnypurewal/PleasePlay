@@ -140,7 +140,10 @@ struct PlayerView: View {
                                     if let track = playedTrack {
                                         saveTrack(track)
                                     }
-                                    self.searchResults = results ?? []
+                                    let allResults = results ?? []
+                                    self.searchResults = allResults.filter { track in
+                                        allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
+                                    }
                                     self.isSearching = false
                                 }
 							}
