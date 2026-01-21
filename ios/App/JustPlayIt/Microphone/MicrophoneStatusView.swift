@@ -43,7 +43,7 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
                     }
                 }
                 
-                Button(action: { recorder.toggleRecording() }) {
+                Button(action: { Task { try? await recorder.toggleRecording() } }) {
                     Image(systemName: recorder.isRecording ? "mic.fill" : "mic.slash.fill")
                         .font(.title3)
                         .foregroundColor(recorder.isRecording ? .accentColor : .secondary)
@@ -65,5 +65,16 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
         }
         .padding(.horizontal)
         .padding(.top, 8)
+        .onChange(of: isAutomaticListeningEnabled) { _, isEnabled in
+            Task {
+                if isEnabled {
+                    if !recorder.isRecording {
+                        try? await recorder.record()
+                    }
+                } else if recorder.isRecording {
+                    try? await recorder.stopRecording()
+                }
+            }
+        }
     }
 }
