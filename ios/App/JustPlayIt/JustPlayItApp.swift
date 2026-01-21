@@ -13,6 +13,7 @@ import MusicStreaming
 struct JustPlayItApp: App {
 	@StateObject private var authManager: AuthorizationManager
     @State private var musicPlayer = MusicPlayer()
+    @StateObject private var recognitionState = RecognitionListeningState()
 	
     init() {
         let musicPlayer = MusicPlayer()
@@ -40,9 +41,11 @@ struct JustPlayItApp: App {
             } else if authManager.isAuthorized {
 				MainTabView()
                     .environment(musicPlayer)
+                    .environmentObject(recognitionState)
 			} else {
 				AuthenticationView()
 					.environmentObject(authManager)
+                    .environmentObject(recognitionState)
 			}
 		}
 		.modelContainer(sharedModelContainer)

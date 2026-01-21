@@ -4,6 +4,7 @@ import SwiftUI
 
 struct DiscoverView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var recognizer = ShazamMusicRecognizer()
     @State private var isRecognizing = false
     @State private var isContinuousRecognizing = false
@@ -125,6 +126,9 @@ struct DiscoverView: View {
     }
 
     private func recognizeSong() async {
+        await MainActor.run {
+            recognitionState.isMusicRecognitionActive = true
+        }
         isRecognizing = true
         recognitionResult = nil
         errorMessage = nil
@@ -136,6 +140,9 @@ struct DiscoverView: View {
             errorMessage = "Recognition failed. \(error.localizedDescription)"
         }
         isRecognizing = false
+        await MainActor.run {
+            recognitionState.isMusicRecognitionActive = false
+        }
     }
 
     private func toggleContinuousRecognition() async {
@@ -145,12 +152,18 @@ struct DiscoverView: View {
             isTimedRecognizing = false
             await recognizer.stopContinuousRecognition()
             isContinuousRecognizing = false
+            await MainActor.run {
+                recognitionState.isMusicRecognitionActive = false
+            }
             return
         }
 
         isContinuousRecognizing = true
         recognitionResult = nil
         errorMessage = nil
+        await MainActor.run {
+            recognitionState.isMusicRecognitionActive = true
+        }
         do {
             try await recognizer.startContinuousRecognition(for: nil) { result in
                 Task { @MainActor in
@@ -161,6 +174,9 @@ struct DiscoverView: View {
         } catch {
             errorMessage = "Recognition failed. \(error.localizedDescription)"
             isContinuousRecognizing = false
+            await MainActor.run {
+                recognitionState.isMusicRecognitionActive = false
+            }
         }
     }
 
@@ -170,12 +186,16 @@ struct DiscoverView: View {
         isContinuousRecognizing = true
         recognitionResult = nil
         errorMessage = nil
+        await MainActor.run {
+            recognitionState.isMusicRecognitionActive = true
+        }
         continuousStopTask?.cancel()
         continuousStopTask = Task {
             try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
             await MainActor.run {
                 isContinuousRecognizing = false
                 isTimedRecognizing = false
+                recognitionState.isMusicRecognitionActive = false
             }
         }
         do {
@@ -189,6 +209,9 @@ struct DiscoverView: View {
             errorMessage = "Recognition failed. \(error.localizedDescription)"
             isContinuousRecognizing = false
             isTimedRecognizing = false
+            await MainActor.run {
+                recognitionState.isMusicRecognitionActive = false
+            }
             continuousStopTask?.cancel()
             continuousStopTask = nil
         }
@@ -222,4 +245,5 @@ struct DiscoverView: View {
 
 #Preview {
     DiscoverView()
+        .environmentObject(RecognitionListeningState())
 }

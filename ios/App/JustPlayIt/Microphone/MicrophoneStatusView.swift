@@ -8,6 +8,7 @@ import SwiftUI
 struct MicrophoneStatusView<R: AudioRecording>: View {
     let recorder: R
     @Binding var isAutomaticListeningEnabled: Bool
+    @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var pulseScale: CGFloat = 1.0
     
     var body: some View {
@@ -15,8 +16,21 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
             HStack {
                 Spacer()
                 
-                Button(action: { Task { try? await recorder.toggleRecording() } }) {
-                    if recorder.isRecording {
+                Button(action: {
+                    guard !recognitionState.isMusicRecognitionActive else { return }
+                    Task { try? await recorder.toggleRecording() }
+                }) {
+                    if recognitionState.isMusicRecognitionActive {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.orange)
+                                .frame(width: 8, height: 8)
+                            Text("Voice listening paused")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if recorder.isRecording {
                         HStack(spacing: 8) {
                             Circle()
                                 .fill(Color.red)
@@ -46,7 +60,10 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
                 }
                 .buttonStyle(.plain)
                 
-                Button(action: { Task { try? await recorder.toggleRecording() } }) {
+                Button(action: {
+                    guard !recognitionState.isMusicRecognitionActive else { return }
+                    Task { try? await recorder.toggleRecording() }
+                }) {
                     Image(systemName: recorder.isRecording ? "mic.fill" : "mic.slash.fill")
                         .font(.title3)
                         .foregroundColor(recorder.isRecording ? .accentColor : .secondary)
@@ -64,12 +81,16 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
                 Toggle("", isOn: $isAutomaticListeningEnabled)
                     .labelsHidden()
                     .fixedSize()
+                    .disabled(recognitionState.isMusicRecognitionActive)
             }
         }
         .padding(.horizontal)
         .padding(.top, 8)
         .onChange(of: isAutomaticListeningEnabled) { _, isEnabled in
             Task {
+                if recognitionState.isMusicRecognitionActive {
+                    return
+                }
                 if isEnabled {
                     if !recorder.isRecording {
                         try? await recorder.record()
