@@ -54,8 +54,8 @@ struct HistoryView: View {
                                     Text(song.artist)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
-                                    if song.recognizedByShazam {
-                                        Text("Recognized")
+                                    if song.recognizedByShazam, let recognizedAt = song.recognizedAt {
+                                        Text("Recognized at \(recognizedAt.formatted(date: .abbreviated, time: .shortened))")
                                             .font(.caption2.weight(.semibold))
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)

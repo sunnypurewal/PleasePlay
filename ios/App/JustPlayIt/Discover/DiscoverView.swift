@@ -6,6 +6,9 @@ struct DiscoverView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var recognizer = ShazamMusicRecognizer()
     @State private var isRecognizing = false
+    @State private var isContinuousRecognizing = false
+    @State private var isTimedRecognizing = false
+    @State private var continuousStopTask: Task<Void, Never>?
     @State private var recognitionResult: MusicRecognitionResult?
     @State private var errorMessage: String?
 
@@ -35,7 +38,38 @@ struct DiscoverView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .disabled(isRecognizing || isContinuousRecognizing)
+
+            Button {
+                Task {
+                    await toggleContinuousRecognition()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: isContinuousRecognizing ? "stop.circle" : "waveform.circle")
+                    Text(isContinuousRecognizing ? "Stop Listening" : "Listen Continuously")
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(isContinuousRecognizing ? .red : .blue)
             .disabled(isRecognizing)
+
+            Button {
+                Task {
+                    await startTimedRecognition(duration: 3_600)
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "timer")
+                    Text(isTimedRecognizing ? "Listening (1 hour)" : "Listen for 1 hour")
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(isRecognizing || isContinuousRecognizing)
 
             if let recognitionResult {
                 HStack(spacing: 12) {
@@ -104,6 +138,62 @@ struct DiscoverView: View {
         isRecognizing = false
     }
 
+    private func toggleContinuousRecognition() async {
+        if isContinuousRecognizing {
+            continuousStopTask?.cancel()
+            continuousStopTask = nil
+            isTimedRecognizing = false
+            await recognizer.stopContinuousRecognition()
+            isContinuousRecognizing = false
+            return
+        }
+
+        isContinuousRecognizing = true
+        recognitionResult = nil
+        errorMessage = nil
+        do {
+            try await recognizer.startContinuousRecognition(for: nil) { result in
+                Task { @MainActor in
+                    recognitionResult = result
+                    addToHistory(from: result)
+                }
+            }
+        } catch {
+            errorMessage = "Recognition failed. \(error.localizedDescription)"
+            isContinuousRecognizing = false
+        }
+    }
+
+    private func startTimedRecognition(duration: TimeInterval) async {
+        guard !isContinuousRecognizing else { return }
+        isTimedRecognizing = true
+        isContinuousRecognizing = true
+        recognitionResult = nil
+        errorMessage = nil
+        continuousStopTask?.cancel()
+        continuousStopTask = Task {
+            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            await MainActor.run {
+                isContinuousRecognizing = false
+                isTimedRecognizing = false
+            }
+        }
+        do {
+            try await recognizer.startContinuousRecognition(for: duration) { result in
+                Task { @MainActor in
+                    recognitionResult = result
+                    addToHistory(from: result)
+                }
+            }
+        } catch {
+            errorMessage = "Recognition failed. \(error.localizedDescription)"
+            isContinuousRecognizing = false
+            isTimedRecognizing = false
+            continuousStopTask?.cancel()
+            continuousStopTask = nil
+        }
+    }
+
     @MainActor
     private func addToHistory(from result: MusicRecognitionResult) {
         let serviceIDs: [MusicService: String]
@@ -123,7 +213,8 @@ struct DiscoverView: View {
             lastPlayedAt: result.recognizedAt,
             playCount: 0,
             playHistory: [],
-            recognizedByShazam: true
+            recognizedByShazam: true,
+            recognizedAt: result.recognizedAt
         )
         modelContext.insert(track)
     }
