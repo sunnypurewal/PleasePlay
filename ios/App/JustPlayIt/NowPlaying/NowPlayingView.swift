@@ -9,8 +9,8 @@ struct NowPlayingView: View {
     @State private var dragValue: TimeInterval = 0
     
     private func formatTime(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
+        let minutes = Int(max(0, time)) / 60
+        let seconds = Int(max(0, time)) % 60
         return String(format: "%02d:%02d", minutes, seconds)
     }
 	
@@ -72,7 +72,7 @@ struct NowPlayingView: View {
                 HStack {
                     Text(formatTime(isDragging ? dragValue : musicPlayer.currentPlaybackTime))
                     Spacer()
-                    Text(formatTime(currentSong.duration))
+                    Text("-\(formatTime(currentSong.duration - (isDragging ? dragValue : musicPlayer.currentPlaybackTime)))")
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)

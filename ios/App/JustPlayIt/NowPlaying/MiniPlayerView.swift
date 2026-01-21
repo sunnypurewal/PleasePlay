@@ -8,6 +8,12 @@ struct MiniPlayerView: View {
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
     
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(max(0, time)) / 60
+        let seconds = Int(max(0, time)) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -65,6 +71,15 @@ struct MiniPlayerView: View {
                 }
             })
             .tint(.primary)
+            .padding(.horizontal, 8)
+            
+            HStack {
+                Text(formatTime(isDragging ? dragValue : musicPlayer.currentPlaybackTime))
+                Spacer()
+                Text("-\(formatTime(currentSong.duration - (isDragging ? dragValue : musicPlayer.currentPlaybackTime)))")
+            }
+            .font(.caption2)
+            .foregroundColor(.secondary)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
         }

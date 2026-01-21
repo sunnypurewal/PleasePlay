@@ -17,6 +17,7 @@ struct PlayerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(MusicPlayer.self) var musicPlayer
 	@State private var microphonePermissionGranted = false
+    @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = true
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
 	@State var predictor: Predictor
@@ -36,6 +37,10 @@ struct PlayerView: View {
 			if !microphonePermissionGranted {
 				MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
 			}
+			
+            if !musicPlayer.isPlaying {
+                MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
+            }
 			
 			Spacer()
 			
@@ -99,9 +104,7 @@ struct PlayerView: View {
 			}
 		}
 		.onAppear {
-			if !microphonePermissionGranted {
-				checkMicrophonePermission()
-			}
+			checkMicrophonePermission()
 		}
 		.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
 			let text = String(new.characters)
@@ -155,7 +158,7 @@ struct PlayerView: View {
 		.onChange(of: musicPlayer.isPlaying) { _, isPlaying in
 			if isPlaying {
 				recorder.pauseRecording()
-			} else {
+			} else if isAutomaticListeningEnabled {
 				try? recorder.resumeRecording()
 			}
 		}
@@ -191,8 +194,10 @@ struct PlayerView: View {
 		}
 		
 		microphonePermissionGranted = isGranted
-		if isGranted && !musicPlayer.isPlaying {
-			Task { try await recorder.record() }
+		if isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled {
+			Task { 
+                try await recorder.record()
+            }
 		}
 	}
 	
@@ -201,8 +206,10 @@ struct PlayerView: View {
 			AVAudioApplication.requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
-					if granted {
-						Task { try? await self.recorder.record() }
+					if granted && self.isAutomaticListeningEnabled {
+						Task { 
+                            try? await self.recorder.record() 
+                        }
 					}
 				}
 			}
@@ -210,8 +217,10 @@ struct PlayerView: View {
 			AVAudioSession.sharedInstance().requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
-					if granted {
-						Task { try? await self.recorder.record() }
+					if granted && self.isAutomaticListeningEnabled {
+						Task { 
+                            try? await self.recorder.record() 
+                        }
 					}
 				}
 			}

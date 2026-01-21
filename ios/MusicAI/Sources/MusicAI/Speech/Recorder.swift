@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import SwiftUI
 
+@Observable
 public class Recorder {
 	private var outputContinuation: AsyncStream<AudioData>.Continuation? = nil
 	private let audioEngine: AVAudioEngine
@@ -17,6 +18,8 @@ public class Recorder {
 	
 	var file: AVAudioFile?
 	private let url: URL
+    
+    public var isRecording: Bool = false
 	
 	public init(transcriber: SpokenWordTranscriber) {
 		audioEngine = AVAudioEngine()
@@ -36,14 +39,16 @@ public class Recorder {
 #endif
 		try await transcriber.setUpTranscriber()
 		
+        isRecording = true
 		for await input in try await audioStream() {
 			try await self.transcriber.streamAudioToTranscriber(input.buffer)
 		}
+        isRecording = false
 	}
 	
 	public func stopRecording() async throws {
 		audioEngine.stop()
-		
+		isRecording = false
 		try await transcriber.finishTranscribing()
 		
 		Task {
@@ -54,11 +59,21 @@ public class Recorder {
 	
 	public func pauseRecording() {
 		audioEngine.pause()
+        isRecording = false
 	}
 	
 	public func resumeRecording() throws {
 		try audioEngine.start()
+        isRecording = true
 	}
+
+    public func toggleRecording() {
+        if isRecording {
+            pauseRecording()
+        } else {
+            try? resumeRecording()
+        }
+    }
 #if os(iOS)
 	func setUpAudioSession() throws {
 		let audioSession = AVAudioSession.sharedInstance()
@@ -107,6 +122,9 @@ public class Recorder {
 	}
 	
 	private func setupAudioEngine() throws {
+#if os(iOS)
+        try setUpAudioSession()
+#endif
         let inputNode = audioEngine.inputNode
         var format = inputNode.outputFormat(forBus: 0)
         

@@ -4,6 +4,8 @@
 <dict>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>We need access to your music library to play songs.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone for voice commands.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
