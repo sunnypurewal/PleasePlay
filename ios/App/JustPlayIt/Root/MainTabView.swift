@@ -15,6 +15,14 @@ struct MainTabView: View {
                         .tabItem {
                             Label("Home", systemImage: "house.fill")
                         }
+
+                    NavigationStack {
+                        DiscoverView()
+                            .navigationTitle("Discover")
+                    }
+                    .tabItem {
+                        Label("Discover", systemImage: "sparkles")
+                    }
                     
                     NavigationStack {
                         HistoryView(songs: historySongs)
