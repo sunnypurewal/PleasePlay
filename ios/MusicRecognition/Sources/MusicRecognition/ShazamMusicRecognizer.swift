@@ -20,6 +20,7 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
     private var stopTask: Task<Void, Never>?
     private var isRunning = false
     private var didWireDelegates = false
+    private var recognizedKeys = Set<String>()
 
     public init() {
         self.session = SHSession()
@@ -57,6 +58,7 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         guard !isRunning else {
             throw MusicRecognitionError.alreadyRunning
         }
+        recognizedKeys.removeAll()
         self.onRecognition = onRecognition
 
         // Ensure delegates are wired in an actor-isolated context.
@@ -150,6 +152,12 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
             return
         }
 
+        let matchKey = recognitionKey(for: mediaItem)
+        if recognizedKeys.contains(matchKey) {
+            return
+        }
+        recognizedKeys.insert(matchKey)
+
         let result = MusicRecognitionResult(
             title: mediaItem.title ?? "Unknown Title",
             artist: mediaItem.artist ?? "Unknown Artist",
@@ -168,6 +176,16 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         if let error, singleContinuation != nil {
             completeSingleRecognition(with: .failure(error))
         }
+    }
+
+    private func recognitionKey(for mediaItem: SHMediaItem) -> String {
+        if let appleMusicID = mediaItem.appleMusicID, !appleMusicID.isEmpty {
+            return "am:\(appleMusicID)"
+        }
+        let title = mediaItem.title?.lowercased() ?? "unknown-title"
+        let artist = mediaItem.artist?.lowercased() ?? "unknown-artist"
+        let album = mediaItem.subtitle?.lowercased() ?? "unknown-album"
+        return "meta:\(title)|\(artist)|\(album)"
     }
 }
 
