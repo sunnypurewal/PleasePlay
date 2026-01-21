@@ -31,142 +31,139 @@ struct PlayerView: View {
 	}
 	
 	var body: some View {
-		NavigationStack {
-			VStack {
-				// Microphone Permission Banner
-				if !microphonePermissionGranted {
-					MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
-				}
-				
+		VStack {
+			// Microphone Permission Banner
+			if !microphonePermissionGranted {
+				MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
+			}
+			
+			Spacer()
+			
+			// Content for Empty State vs Now Playing
+			if isSearching {
+				ProgressView("Searching...")
 				Spacer()
-				
-				// Content for Empty State vs Now Playing
-                if isSearching {
-                    ProgressView("Searching...")
-                    Spacer()
-                } else if !searchResults.isEmpty {
-                    VStack(alignment: .leading) {
-                        Text("Search Results")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-						List(searchResults, id: \.serviceIDs) { track in
-                            Button(action: {
-                                Task {
-                                    try? await musicPlayer.play(id: track.serviceIDs)
-                                    await MainActor.run {
-                                        saveTrack(track)
-                                    }
-                                }
-                            }) {
-                                HStack {
-                                    if let url = track.artworkURL {
-                                        AsyncImage(url: url) { image in
-                                            image.resizable()
-                                        } placeholder: {
-                                            Color.gray
-                                        }
-                                        .frame(width: 50, height: 50)
-                                        .cornerRadius(4)
-                                    } else {
-                                        Image(systemName: "music.note")
-                                            .frame(width: 50, height: 50)
-                                            .background(Color.secondary.opacity(0.1))
-                                            .cornerRadius(4)
-                                    }
-                                    
-                                    VStack(alignment: .leading) {
-                                        Text(track.title)
-                                            .font(.headline)
-                                        Text(track.artist)
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
-                                        Image(systemName: "speaker.wave.3.fill")
-                                            .foregroundColor(.accentColor)
-                                            .font(.caption)
-                                    }
-                                }
-                            }
-                        }
-                        .listStyle(.plain)
-                    }
-                } else {
-                    PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
-                }
-			}
-			.navigationTitle("Player")
-			.onAppear {
-				if !microphonePermissionGranted {
-					checkMicrophonePermission()
-				}
-			}
-			.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
-				let text = String(new.characters)
-				if !text.isEmpty {
-					Task {
-						do {
-							let output = try await predictor.predictEntities(from: text)
-							
-							speechTranscriber.resetTranscripts()
-							print(output)
-							
-							let artists = output["Artists"] as? [String] ?? []
-							let woas = output["WoAs"] as? [String] ?? []
-							
-							let artist = artists.first ?? ""
-							let title = woas.first ?? ""
-                            
-                            let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
-                            let searchQuery = query.isEmpty ? text : query
-							
-							if !searchQuery.isEmpty {
-                                isSearching = true
-                                // Perform search
-                                async let searchTask = musicPlayer.search(query: searchQuery)
-                                
-                                var playedTrack: Track?
-                                if !artist.isEmpty || !title.isEmpty {
-                                    playedTrack = try? await musicPlayer.play(artist: artist, song: title)
-                                }
-                                
-                                let results = try? await searchTask
-                                
-                                await MainActor.run {
-                                    if let track = playedTrack {
-                                        saveTrack(track)
-                                    }
-                                    let allResults = results ?? []
-                                    self.searchResults = allResults.filter { track in
-                                        allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
-                                    }
-                                    self.isSearching = false
-                                }
+			} else if !searchResults.isEmpty {
+				VStack(alignment: .leading) {
+					Text("Search Results")
+						.font(.headline)
+						.padding(.horizontal)
+					
+					List(searchResults, id: \.serviceIDs) { track in
+						Button(action: {
+							Task {
+								try? await musicPlayer.play(id: track.serviceIDs)
+								await MainActor.run {
+									saveTrack(track)
+								}
 							}
-						} catch {
-							print("Prediction error: \(error)")
-                            isSearching = false
+						}) {
+							HStack {
+								if let url = track.artworkURL {
+									AsyncImage(url: url) { image in
+										image.resizable()
+									} placeholder: {
+										Color.gray
+									}
+									.frame(width: 50, height: 50)
+									.cornerRadius(4)
+								} else {
+									Image(systemName: "music.note")
+										.frame(width: 50, height: 50)
+										.background(Color.secondary.opacity(0.1))
+										.cornerRadius(4)
+								}
+								
+								VStack(alignment: .leading) {
+									Text(track.title)
+										.font(.headline)
+									Text(track.artist)
+										.font(.subheadline)
+									.foregroundColor(.secondary)
+								}
+								
+								Spacer()
+								
+								if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
+									Image(systemName: "speaker.wave.3.fill")
+										.foregroundColor(.accentColor)
+										.font(.caption)
+								}
+							}
 						}
+					}
+					.listStyle(.plain)
+				}
+			} else {
+				PlayerEmptyStateView(transcript: speechTranscriber.finalizedTranscript)
+			}
+		}
+		.onAppear {
+			if !microphonePermissionGranted {
+				checkMicrophonePermission()
+			}
+		}
+		.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
+			let text = String(new.characters)
+			if !text.isEmpty {
+				Task {
+					do {
+						let output = try await predictor.predictEntities(from: text)
+						
+						speechTranscriber.resetTranscripts()
+						print(output)
+						
+						let artists = output["Artists"] as? [String] ?? []
+						let woas = output["WoAs"] as? [String] ?? []
+						
+						let artist = artists.first ?? ""
+						let title = woas.first ?? ""
+						
+						let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
+						let searchQuery = query.isEmpty ? text : query
+						
+						if !searchQuery.isEmpty {
+							isSearching = true
+							// Perform search
+							async let searchTask = musicPlayer.search(query: searchQuery)
+							
+							var playedTrack: Track?
+							if !artist.isEmpty || !title.isEmpty {
+								playedTrack = try? await musicPlayer.play(artist: artist, song: title)
+							}
+							
+							let results = try? await searchTask
+							
+							await MainActor.run {
+								if let track = playedTrack {
+									saveTrack(track)
+								}
+								let allResults = results ?? []
+								self.searchResults = allResults.filter { track in
+									allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
+								}
+								self.isSearching = false
+							}
+						}
+					} catch {
+						print("Prediction error: \(error)")
+						isSearching = false
 					}
 				}
 			}
-            .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
-                if isPlaying {
-                    recorder.pauseRecording()
-                } else {
-                    try? recorder.resumeRecording()
-                }
-            }
-			.task {
-				do {
-					try await predictor.loadModel()
-				} catch {
-					print("Failed to load model: \(error)")
-				}
+		}
+		.onChange(of: musicPlayer.isPlaying) { _, isPlaying in
+			if isPlaying {
+				recorder.pauseRecording()
+			} else {
+				try? recorder.resumeRecording()
+			}
+		}
+		.task {
+			do {
+				try await predictor.loadModel()
+			} catch {
+				print("Failed to load model: \(error)")
 			}
 		}
 	}
