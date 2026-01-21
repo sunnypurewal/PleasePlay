@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A33250742F215F6100531242 /* MusicRecognition in Frameworks */ = {isa = PBXBuildFile; productRef = A33250732F215F6100531242 /* MusicRecognition */; };
 		A3375BA22F1FEB2100D3D9B0 /* MusicStreaming in Frameworks */ = {isa = PBXBuildFile; productRef = A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */; };
 		A3375BA52F1FEEE000D3D9B0 /* MusicAI in Frameworks */ = {isa = PBXBuildFile; productRef = A3375BA42F1FEEE000D3D9B0 /* MusicAI */; };
 /* End PBXBuildFile section */
@@ -83,6 +84,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A33250742F215F6100531242 /* MusicRecognition in Frameworks */,
 				A3375BA52F1FEEE000D3D9B0 /* MusicAI in Frameworks */,
 				A3375BA22F1FEB2100D3D9B0 /* MusicStreaming in Frameworks */,
 			);
@@ -148,6 +150,7 @@
 			packageProductDependencies = (
 				A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */,
 				A3375BA42F1FEEE000D3D9B0 /* MusicAI */,
+				A33250732F215F6100531242 /* MusicRecognition */,
 			);
 			productName = JustPlayIt;
 			productReference = A3BE77752F1AC3FE00016F0B /* JustPlayIt.app */;
@@ -234,6 +237,7 @@
 			packageReferences = (
 				A3375BA02F1FEB2100D3D9B0 /* XCLocalSwiftPackageReference "../MusicStreaming" */,
 				A3375BA32F1FEEDF00D3D9B0 /* XCLocalSwiftPackageReference "../MusicAI" */,
+				A33250722F215F6100531242 /* XCLocalSwiftPackageReference "../MusicRecognition" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A3BE77762F1AC3FE00016F0B /* Products */;
@@ -326,8 +330,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustPlayIt/Info.plist;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "JustPlayIt needs access to your music library to play your favorite tracks.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "JustPlayIt needs access to the microphone to listen to your voice commands.";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to your music library to play songs.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for voice commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "JustPlayIt needs speech recognition to understand your voice commands.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -383,8 +387,8 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustPlayIt/Info.plist;
-				INFOPLIST_KEY_NSAppleMusicUsageDescription = "JustPlayIt needs access to your music library to play your favorite tracks.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "JustPlayIt needs access to the microphone to listen to your voice commands.";
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to your music library to play songs.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for voice commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "JustPlayIt needs speech recognition to understand your voice commands.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -691,6 +695,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A33250722F215F6100531242 /* XCLocalSwiftPackageReference "../MusicRecognition" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../MusicRecognition;
+		};
 		A3375BA02F1FEB2100D3D9B0 /* XCLocalSwiftPackageReference "../MusicStreaming" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../MusicStreaming;
@@ -702,6 +710,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A33250732F215F6100531242 /* MusicRecognition */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MusicRecognition;
+		};
 		A3375BA12F1FEB2100D3D9B0 /* MusicStreaming */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MusicStreaming;
