@@ -3,14 +3,11 @@ import MusicStreaming
 
 struct HistoryView: View {
     @Environment(MusicPlayer.self) var musicPlayer
+    @Environment(\.modelContext) private var modelContext
     let songs: [PlayedTrack]
     
     var body: some View {
         VStack(alignment: .leading) {
-            Text("History")
-                .font(.headline)
-                .padding(.horizontal)
-            
             if songs.isEmpty {
                 ContentUnavailableView {
                     Label("No History", systemImage: "clock")
@@ -23,6 +20,11 @@ struct HistoryView: View {
                     Button(action: {
                         Task {
                             _ = try? await musicPlayer.play(id: StreamingServiceIDs(song.serviceIDs))
+                            await MainActor.run {
+                                song.playCount += 1
+                                song.playHistory.append(Date())
+                                song.lastPlayedAt = Date()
+                            }
                         }
                     }) {
                         HStack {
