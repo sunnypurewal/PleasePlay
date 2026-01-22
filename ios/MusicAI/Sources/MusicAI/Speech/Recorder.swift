@@ -14,8 +14,6 @@ public class Recorder {
 	private var outputContinuation: AsyncStream<AudioData>.Continuation? = nil
 	private let audioEngine: AVAudioEngine
 	private let transcriber: SpokenWordTranscriber
-	var playerNode: AVAudioPlayerNode?
-	
 	var file: AVAudioFile?
 	private let url: URL
     
@@ -47,20 +45,17 @@ public class Recorder {
 	}
 	
 	public func stopRecording() async throws {
+		guard isRecording else { return }
 		audioEngine.stop()
 		isRecording = false
 		try await transcriber.finishTranscribing()
 #if os(iOS)
         deactivateAudioSession()
 #endif
-		
-		Task {
-			// self.story.title.wrappedValue = try await story.wrappedValue.suggestedTitle() ?? story.title.wrappedValue
-		}
-		
 	}
 	
 	public func pauseRecording() {
+		guard isRecording else { return }
 		audioEngine.pause()
         isRecording = false
 #if os(iOS)
@@ -69,6 +64,7 @@ public class Recorder {
 	}
 	
 	public func resumeRecording() throws {
+		guard !isRecording else { return }
 #if os(iOS)
         try setUpAudioSession()
 #endif
@@ -129,7 +125,7 @@ public class Recorder {
 		audioEngine.prepare()
 		try audioEngine.start()
 		
-		return AsyncStream(AudioData.self, bufferingPolicy: .unbounded) {
+		return AsyncStream(AudioData.self) {
 			continuation in
 			outputContinuation = continuation
 		}
@@ -156,35 +152,5 @@ public class Recorder {
 		inputNode.removeTap(onBus: 0)
 	}
 	
-	public func playRecording() {
-		guard let file else {
-			return
-		}
-		
-		playerNode = AVAudioPlayerNode()
-		guard let playerNode else {
-			return
-		}
-		
-		audioEngine.attach(playerNode)
-		audioEngine.connect(playerNode,
-							to: audioEngine.outputNode,
-							format: file.processingFormat)
-		
-		playerNode.scheduleFile(file,
-								at: nil,
-								completionCallbackType: .dataPlayedBack) { _ in
-		}
-		
-		do {
-			try audioEngine.start()
-			playerNode.play()
-		} catch {
-			print("error")
-		}
-	}
 	
-	public func stopPlaying() {
-		audioEngine.stop()
-	}
 }

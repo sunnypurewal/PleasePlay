@@ -7,11 +7,13 @@ struct DiscoverView: View {
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var recognizer = ShazamMusicRecognizer()
     @State private var isRecognizing = false
+    @State private var singleRecognitionTask: Task<Void, Never>?
     @State private var isContinuousRecognizing = false
     @State private var isTimedRecognizing = false
     @State private var continuousStopTask: Task<Void, Never>?
     @State private var recognitionResult: MusicRecognitionResult?
     @State private var errorMessage: String?
+    private let activeListeningColor = Color.red
 
     var body: some View {
         VStack(spacing: 16) {
@@ -28,18 +30,23 @@ struct DiscoverView: View {
 
             Button {
                 Task {
-                    await recognizeSong()
+                    if isRecognizing {
+                        await cancelSingleRecognition()
+                    } else {
+                        await recognizeSong()
+                    }
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "waveform")
-                    Text(isRecognizing ? "Listening..." : "Recognize Song")
+                    Image(systemName: isRecognizing ? "xmark.circle" : "waveform")
+                    Text(isRecognizing ? "Cancel" : "Recognize Song")
                 }
                 .font(.headline)
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(isRecognizing || isContinuousRecognizing)
+            .tint(isRecognizing ? activeListeningColor : .accentColor)
+            .disabled(isContinuousRecognizing)
 
             Button {
                 Task {
@@ -54,7 +61,7 @@ struct DiscoverView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .tint(isContinuousRecognizing ? .red : .blue)
+            .tint(isContinuousRecognizing ? activeListeningColor : .blue)
             .disabled(isRecognizing)
 
             Button {
@@ -132,15 +139,39 @@ struct DiscoverView: View {
         isRecognizing = true
         recognitionResult = nil
         errorMessage = nil
-        do {
-            let result = try await recognizer.recognizeSingleSong()
-            recognitionResult = result
-            await addToHistory(from: result)
-        } catch {
-            errorMessage = "Recognition failed. \(error.localizedDescription)"
+        singleRecognitionTask?.cancel()
+        singleRecognitionTask = Task {
+            do {
+                let result = try await recognizer.recognizeSingleSong()
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    recognitionResult = result
+                }
+                await addToHistory(from: result)
+            } catch is CancellationError {
+                await MainActor.run {
+                    errorMessage = nil
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Recognition failed. \(error.localizedDescription)"
+                }
+            }
+            await MainActor.run {
+                isRecognizing = false
+                recognitionState.isMusicRecognitionActive = false
+                singleRecognitionTask = nil
+            }
         }
-        isRecognizing = false
+    }
+
+    private func cancelSingleRecognition() async {
+        singleRecognitionTask?.cancel()
+        singleRecognitionTask = nil
+        await recognizer.cancelSingleRecognition()
+        await recognizer.stopContinuousRecognition()
         await MainActor.run {
+            isRecognizing = false
             recognitionState.isMusicRecognitionActive = false
         }
     }

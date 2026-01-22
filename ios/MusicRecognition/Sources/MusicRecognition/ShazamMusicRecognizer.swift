@@ -51,6 +51,11 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         }
     }
 
+    public func cancelSingleRecognition() async {
+        guard singleContinuation != nil else { return }
+        completeSingleRecognition(with: .failure(CancellationError()))
+    }
+
     public func startContinuousRecognition(
         for duration: TimeInterval?,
         onRecognition: @escaping @Sendable (MusicRecognitionResult) -> Void
