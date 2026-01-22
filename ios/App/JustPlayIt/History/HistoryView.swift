@@ -85,7 +85,7 @@ struct HistoryView: View {
     private var sortedSongs: [PlayedTrack] {
         switch sortCriterion {
         case .addedAt:
-            return songs.sorted { ($0.addedAt ?? .distantPast) > ($1.addedAt ?? .distantPast) }
+            return songs.sorted { ($0.addedAt) > ($1.addedAt) }
         case .playCount:
             return songs.sorted {
                 if $0.playCount == $1.playCount {

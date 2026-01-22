@@ -1,5 +1,5 @@
 //
-//  PlayerView.swift
+//  HomeView.swift
 //  JustPlayIt
 //
 //  Created by Sunny on 2026-01-16.
@@ -13,7 +13,7 @@ import Tokenizers
 import MusicStreaming
 import MusicAI
 
-struct PlayerView: View {
+struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
@@ -285,7 +285,7 @@ struct PlayerView: View {
 }
 
 #Preview {
-	PlayerView()
+	HomeView()
         .environment(MusicPlayer())
         .environmentObject(RecognitionListeningState())
 }

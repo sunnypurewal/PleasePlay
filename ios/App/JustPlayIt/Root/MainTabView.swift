@@ -11,7 +11,7 @@ struct MainTabView: View {
         ZStack {
             ZStack(alignment: .bottom) {
                 TabView {
-                    PlayerView()
+                    HomeView()
                         .tabItem {
                             Label("Home", systemImage: "house.fill")
                         }

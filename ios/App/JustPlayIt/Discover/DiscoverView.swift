@@ -340,7 +340,6 @@ struct DiscoverView: View {
             tidalID: nil,
             youTubeID: nil,
             shazamID: shazamID,
-            lastPlayedAt: recognizedDate,
             playCount: 0,
             playHistory: [],
             recognizedByShazam: true,
