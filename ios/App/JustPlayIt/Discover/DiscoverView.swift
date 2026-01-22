@@ -17,17 +17,6 @@ struct DiscoverView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            VStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 44, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                Text("Discover")
-                    .font(.title2.weight(.semibold))
-                Text("Find new music and curated picks here soon.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
             Button {
                 Task {
                     if isRecognizing {
