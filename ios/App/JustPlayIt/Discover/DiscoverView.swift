@@ -122,12 +122,22 @@ struct DiscoverView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(24)
+        .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
+            guard isPlaying else { return }
+            Task {
+                await recognitionState.requestCancelRecognition(skipResume: true)
+            }
+        }
     }
 
     private func recognizeSong() async {
         wasPlayingBeforeRecognition = musicPlayer.isPlaying
         await MainActor.run {
             recognitionState.isMusicRecognitionActive = true
+            recognitionState.shouldResumePlaybackAfterRecognition = true
+            recognitionState.cancelRecognition = {
+                await cancelSingleRecognition()
+            }
         }
         isRecognizing = true
         recognitionResult = nil
@@ -140,7 +150,7 @@ struct DiscoverView: View {
                 await MainActor.run {
                     recognitionResult = result
                 }
-                await addToHistory(from: result)
+                addToHistory(from: result)
             } catch is CancellationError {
                 await MainActor.run {
                     errorMessage = nil
@@ -153,6 +163,7 @@ struct DiscoverView: View {
             await MainActor.run {
                 isRecognizing = false
                 recognitionState.isMusicRecognitionActive = false
+                recognitionState.clearCancelRecognitionHandler()
                 singleRecognitionTask = nil
             }
             await resumePlaybackIfNeeded()
@@ -167,6 +178,7 @@ struct DiscoverView: View {
         await MainActor.run {
             isRecognizing = false
             recognitionState.isMusicRecognitionActive = false
+            recognitionState.clearCancelRecognitionHandler()
         }
         await resumePlaybackIfNeeded()
     }
@@ -181,6 +193,7 @@ struct DiscoverView: View {
             isContinuousRecognizing = false
             await MainActor.run {
                 recognitionState.isMusicRecognitionActive = false
+                recognitionState.clearCancelRecognitionHandler()
             }
             await resumePlaybackIfNeeded()
             return
@@ -191,6 +204,10 @@ struct DiscoverView: View {
         errorMessage = nil
         await MainActor.run {
             recognitionState.isMusicRecognitionActive = true
+            recognitionState.shouldResumePlaybackAfterRecognition = true
+            recognitionState.cancelRecognition = {
+                await toggleContinuousRecognition()
+            }
         }
         do {
             try await recognizer.startContinuousRecognition(for: nil) { result in
@@ -204,6 +221,7 @@ struct DiscoverView: View {
             isContinuousRecognizing = false
             await MainActor.run {
                 recognitionState.isMusicRecognitionActive = false
+                recognitionState.clearCancelRecognitionHandler()
             }
             await resumePlaybackIfNeeded()
         }
@@ -218,6 +236,10 @@ struct DiscoverView: View {
         errorMessage = nil
         await MainActor.run {
             recognitionState.isMusicRecognitionActive = true
+            recognitionState.shouldResumePlaybackAfterRecognition = true
+            recognitionState.cancelRecognition = {
+                await toggleContinuousRecognition()
+            }
         }
         continuousStopTask?.cancel()
         continuousStopTask = Task {
@@ -226,6 +248,7 @@ struct DiscoverView: View {
                 isContinuousRecognizing = false
                 isTimedRecognizing = false
                 recognitionState.isMusicRecognitionActive = false
+                recognitionState.clearCancelRecognitionHandler()
             }
             await resumePlaybackIfNeeded()
         }
@@ -242,6 +265,7 @@ struct DiscoverView: View {
             isTimedRecognizing = false
             await MainActor.run {
                 recognitionState.isMusicRecognitionActive = false
+                recognitionState.clearCancelRecognitionHandler()
             }
             continuousStopTask?.cancel()
             continuousStopTask = nil
@@ -250,8 +274,12 @@ struct DiscoverView: View {
     }
 
     private func resumePlaybackIfNeeded() async {
-        guard wasPlayingBeforeRecognition else { return }
+        defer {
+            recognitionState.shouldResumePlaybackAfterRecognition = true
+        }
+        let wasPlaying = wasPlayingBeforeRecognition
         wasPlayingBeforeRecognition = false
+        guard wasPlaying, recognitionState.shouldResumePlaybackAfterRecognition else { return }
         try? await musicPlayer.unpause()
     }
 

@@ -12,14 +12,14 @@ import MusicStreaming
 @main
 struct JustPlayItApp: App {
 	@StateObject private var authManager: AuthorizationManager
-    @State private var musicPlayer = MusicPlayer()
-    @StateObject private var recognitionState = RecognitionListeningState()
+	@State private var musicPlayer = MusicPlayer()
+	@StateObject private var recognitionState = RecognitionListeningState()
 	
-    init() {
-        let musicPlayer = MusicPlayer()
-        _musicPlayer = State(initialValue: musicPlayer)
-        _authManager = StateObject(wrappedValue: AuthorizationManager(musicPlayer: musicPlayer))
-    }
+	init() {
+		let musicPlayer = MusicPlayer()
+		_musicPlayer = State(initialValue: musicPlayer)
+		_authManager = StateObject(wrappedValue: AuthorizationManager(musicPlayer: musicPlayer))
+	}
 
 	var sharedModelContainer: ModelContainer = {
 		let schema = Schema([
@@ -36,18 +36,28 @@ struct JustPlayItApp: App {
 	
 	var body: some Scene {
 		WindowGroup {
-            if authManager.isLoading {
-                ProgressView()
-            } else if authManager.isAuthorized {
+			if authManager.isLoading {
+				ProgressView()
+			} else if authManager.isAuthorized {
 				MainTabView()
-                    .environment(musicPlayer)
-                    .environmentObject(recognitionState)
+					.environment(musicPlayer)
+					.environmentObject(recognitionState)
+					.task {
+						configureRecognitionPrePlayHook()
+					}
 			} else {
 				AuthenticationView()
 					.environmentObject(authManager)
-                    .environmentObject(recognitionState)
+					.environmentObject(recognitionState)
 			}
 		}
 		.modelContainer(sharedModelContainer)
+	}
+
+	@MainActor
+	private func configureRecognitionPrePlayHook() {
+		musicPlayer.prePlayHook = {
+			await recognitionState.requestCancelRecognition(skipResume: true)
+		}
 	}
 }

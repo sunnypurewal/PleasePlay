@@ -59,6 +59,7 @@ struct PlayerView: View {
 					List(searchResults, id: \.serviceIDs) { track in
 						Button(action: {
 							Task {
+								await cancelRecognitionBeforePlayback()
 								try? await musicPlayer.play(id: track.serviceIDs)
 								await MainActor.run {
 									saveTrack(track)
@@ -135,6 +136,7 @@ struct PlayerView: View {
 							
 							var playedTrack: Track?
 							if !artist.isEmpty || !title.isEmpty {
+								await cancelRecognitionBeforePlayback()
 								playedTrack = try? await musicPlayer.play(artist: artist, song: title)
 							}
 							
@@ -242,8 +244,13 @@ struct PlayerView: View {
 			}
 		}
 	}
+
+	private func cancelRecognitionBeforePlayback() async {
+		guard recognitionState.isMusicRecognitionActive else { return }
+		await recognitionState.requestCancelRecognition(skipResume: true)
+	}
     
-    private func saveTrack(_ track: Track) {
+	private func saveTrack(_ track: Track) {
         let title = track.title
         let artist = track.artist
         
