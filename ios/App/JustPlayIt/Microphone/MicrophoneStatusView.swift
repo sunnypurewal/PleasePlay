@@ -3,10 +3,11 @@
 //  JustPlayIt
 //
 
+import MusicAI
 import SwiftUI
 
-struct MicrophoneStatusView<R: AudioRecording>: View {
-    let recorder: R
+struct MicrophoneStatusView: View {
+    @Bindable var recorder: Recorder
     @Binding var isAutomaticListeningEnabled: Bool
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var pulseScale: CGFloat = 1.0

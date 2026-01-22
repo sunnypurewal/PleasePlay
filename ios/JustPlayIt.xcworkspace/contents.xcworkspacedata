@@ -46,6 +46,9 @@
                location = "group:AuthorizationManager.swift">
             </FileRef>
             <FileRef
+               location = "group:Unauthenticated.swift">
+            </FileRef>
+            <FileRef
                location = "group:Tidal.swift">
             </FileRef>
          </Group>

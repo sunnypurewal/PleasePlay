@@ -36,19 +36,18 @@ struct JustPlayItApp: App {
 	
 	var body: some Scene {
 		WindowGroup {
-			if authManager.isLoading {
-				ProgressView()
-			} else if authManager.isAuthorized {
-				MainTabView()
-					.environment(musicPlayer)
-					.environmentObject(recognitionState)
-					.task {
-						configureRecognitionPrePlayHook()
-					}
-			} else {
-				AuthenticationView()
-					.environmentObject(authManager)
-					.environmentObject(recognitionState)
+			Group {
+				if authManager.isLoading {
+					ProgressView()
+				} else {
+					MainTabView()
+				}
+			}
+			.environment(musicPlayer)
+			.environmentObject(recognitionState)
+			.environmentObject(authManager)
+			.task {
+				configureRecognitionPrePlayHook()
 			}
 		}
 		.modelContainer(sharedModelContainer)

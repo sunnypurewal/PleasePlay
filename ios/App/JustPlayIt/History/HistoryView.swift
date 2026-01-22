@@ -202,6 +202,21 @@ private struct HistoryRow: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                clearLikes()
+            } label: {
+                Label("Clear Likes", systemImage: "heart.slash")
+            }
+            .tint(.red)
+
+            Button {
+                clearPlays()
+            } label: {
+                Label("Clear Plays", systemImage: "play.slash")
+            }
+            .tint(.orange)
+        }
     }
 
     private var artworkView: some View {
@@ -286,6 +301,26 @@ private struct HistoryRow: View {
             try modelContext.save()
         } catch {
             print("Failed to delete track: \(error)")
+        }
+    }
+
+    private func clearLikes() {
+        song.likeCount = 0
+        persistContext()
+    }
+
+    private func clearPlays() {
+        song.playCount = 0
+        song.playHistory.removeAll()
+        song.lastPlayedAt = nil
+        persistContext()
+    }
+
+    private func persistContext() {
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to persist track changes: \(error)")
         }
     }
 }

@@ -27,6 +27,10 @@ struct HomeView: View {
     @State private var isSearching = false
     @State private var hasAppeared = false
     @State private var voiceCommandSuggestion = "Blackbird by The Beatles"
+    @State private var recognizedArtist = ""
+    @State private var recognizedTitle = ""
+    @State private var isPlayingDebounced = false
+    @State private var playbackDebounceTask: Task<Void, Never>?
 
     init() {
         let transcriber = SpokenWordTranscriber()
@@ -42,15 +46,18 @@ struct HomeView: View {
                 MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
             }
             
-			if !musicPlayer.isPlaying && !musicPlayer.isSeeking {
+            if !isPlayingDebounced && !musicPlayer.isSeeking {
                 MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
-				if recorder.isRecording {
-					Text("Ask me to play a song or artist.")
-					Text("\"**Please play** \(voiceCommandSuggestion)\"")
+                if recorder.isRecording {
+                    Text("Ask me to play a song or artist.")
+                    Text("\"**Please play** \(voiceCommandSuggestion)\"")
 						.font(.title3)
 						.foregroundColor(.secondary)
 						.multilineTextAlignment(.center)
 						.padding(.horizontal)
+						.onAppear {
+							refreshVoiceCommandSuggestion()
+						}
 				}
 				Spacer()
             }
@@ -63,7 +70,7 @@ struct HomeView: View {
                 Spacer()
             } else if !searchResults.isEmpty {
                 VStack(alignment: .leading) {
-                    Text("Search Results")
+                    Text(resultsListTitle)
                         .font(.headline)
                         .padding(.horizontal)
                     
@@ -116,6 +123,7 @@ struct HomeView: View {
             }
         }
         .onAppear {
+            schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
             checkMicrophonePermission(shouldStartListening: !hasAppeared)
             hasAppeared = true
             refreshVoiceCommandSuggestion()
@@ -146,6 +154,11 @@ struct HomeView: View {
 
                     let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
                     let searchQuery = query.isEmpty ? text : query
+                    
+                    await MainActor.run {
+                        self.recognizedArtist = artist
+                        self.recognizedTitle = title
+                    }
 
                     if !searchQuery.isEmpty {
                         let hasEntity = !(artist.isEmpty && title.isEmpty)
@@ -189,6 +202,7 @@ struct HomeView: View {
             }
         }
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
+            schedulePlaybackStateDebounce(isPlaying: isPlaying)
             if isPlaying {
                 recorder.pauseRecording()
             } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
@@ -209,6 +223,37 @@ struct HomeView: View {
                 try await predictor.loadModel()
             } catch {
                 print("Failed to load model: \(error)")
+            }
+        }
+    }
+    
+    private var resultsListTitle: String {
+        if !recognizedTitle.isEmpty && !recognizedArtist.isEmpty {
+            return "\(recognizedTitle) by \(recognizedArtist)"
+        }
+        if !recognizedArtist.isEmpty {
+            return recognizedArtist
+        }
+        return "Search Results"
+    }
+
+    @MainActor
+    private func schedulePlaybackStateDebounce(isPlaying: Bool) {
+        playbackDebounceTask?.cancel()
+        if isPlaying {
+            isPlayingDebounced = true
+            playbackDebounceTask = nil
+            return
+        }
+
+        playbackDebounceTask = Task {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                playbackDebounceTask = nil
+                if !musicPlayer.isPlaying {
+                    isPlayingDebounced = false
+                }
             }
         }
     }
@@ -244,28 +289,29 @@ struct HomeView: View {
     }
     
     private func requestMicrophoneAccess() {
-        if #available(iOS 17.0, *) {
-            AVAudioApplication.requestRecordPermission { granted in
-                DispatchQueue.main.async {
-                    self.microphonePermissionGranted = granted
-                    if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-                        Task { 
-                            try? await self.recorder.record() 
-                        }
-                    }
-                }
+        let completion: (Bool) -> Void = { granted in
+            DispatchQueue.main.async {
+                self.handleMicrophonePermissionResult(granted: granted)
             }
-        } else {
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                DispatchQueue.main.async {
-                    self.microphonePermissionGranted = granted
-                    if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-                        Task { 
-                            try? await self.recorder.record() 
-                        }
-                    }
-                }
-            }
+        }
+
+		AVAudioApplication.requestRecordPermission(completionHandler: completion)
+    }
+
+    private func handleMicrophonePermissionResult(granted: Bool) {
+        let wasPreviouslyGranted = microphonePermissionGranted
+        microphonePermissionGranted = granted
+        guard granted && !wasPreviouslyGranted else { return }
+        startRecordingAfterInitialPermissionGrant()
+    }
+
+    private func startRecordingAfterInitialPermissionGrant() {
+        guard !musicPlayer.isPlaying,
+              recognitionState.shouldAutomaticallyListenForCommands,
+              !recognitionState.isMusicRecognitionActive else { return }
+
+        Task {
+            try? await recorder.record()
         }
     }
 

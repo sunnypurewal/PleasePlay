@@ -1,0 +1,148 @@
+package main
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+type AppleMusicResponse struct {
+	Results struct {
+		Songs struct {
+			Data []struct {
+				Attributes struct {
+					Name             string `json:"name"`
+					ArtistName       string `json:"artistName"`
+					AlbumName        string `json:"albumName"`
+					DurationInMillis int    `json:"durationInMillis"`
+					Artwork          struct {
+						URL string `json:"url"`
+					} `json:"artwork"`
+					Previews []struct {
+						URL string `json:"url"`
+					} `json:"previews"`
+				} `json:"attributes"`
+			} `json:"data"`
+		} `json:"songs"`
+	} `json:"results"`
+}
+
+type Track struct {
+	Title      string `json:"title"`
+	Artist     string `json:"artist"`
+	Album      string `json:"album"`
+	ArtworkURL string `json:"artwork_url"`
+	Duration   int    `json:"duration"`
+	PreviewURL string `json:"preview_url"`
+}
+
+func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	priv_key := `
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgPGx8PoRJDqbRh0xr
+PqGhKOkVaj+0fFk5iQ2Enw3J4HygCgYIKoZIzj0DAQehRANCAASP2WvgxJuhxD5S
+E01FK/3SpdsCYzlGb786Fgk9llR8XFIsXRh/Qgx4ijhbK4+5ZdebEltWfwGrty+y
+xpZ3aOrY
+-----END PRIVATE KEY-----
+`
+	KEY_ID := "6BLN7U6STP"
+	TEAM_ID := "ZG82TFXU3C"
+
+	block, err := jwt.ParseECPrivateKeyFromPEM([]byte(priv_key))
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to parse private key: " + err.Error()}, nil
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
+		"iss": TEAM_ID,
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	token.Header["kid"] = KEY_ID
+
+	tokenString, err := token.SignedString(block)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to sign token: " + err.Error()}, nil
+	}
+
+	search_url := "https://api.music.apple.com/v1/catalog/us/search"
+	
+	// Create the query parameters
+	params := url.Values{}
+	params.Add("term", request.Body)
+	// Adding typical types for music search to provide useful results
+	params.Add("types", "songs")
+	params.Add("limit", "5")
+
+	reqURL := search_url + "?" + params.Encode()
+    
+	// Create request
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to create request: " + err.Error()}, nil
+	}
+
+	req.Header.Add("Authorization", "Bearer "+tokenString)
+
+	// Execute request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to execute request: " + err.Error()}, nil
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to read response: " + err.Error()}, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return events.APIGatewayProxyResponse{StatusCode: resp.StatusCode, Body: string(bodyBytes)}, nil
+	}
+
+	var amResp AppleMusicResponse
+	if err := json.Unmarshal(bodyBytes, &amResp); err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to parse Apple Music response: " + err.Error()}, nil
+	}
+
+	var tracks []Track
+	for _, song := range amResp.Results.Songs.Data {
+		preview := ""
+		if len(song.Attributes.Previews) > 0 {
+			preview = song.Attributes.Previews[0].URL
+		}
+
+		tracks = append(tracks, Track{
+			Title:      song.Attributes.Name,
+			Artist:     song.Attributes.ArtistName,
+			Album:      song.Attributes.AlbumName,
+			ArtworkURL: song.Attributes.Artwork.URL,
+			Duration:   song.Attributes.DurationInMillis,
+			PreviewURL: preview,
+		})
+	}
+
+	respBody, err := json.Marshal(tracks)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to marshal results: " + err.Error()}, nil
+	}
+
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		Body:       string(respBody),
+	}, nil
+}
+
+func main() {
+	lambda.Start(handler)
+}

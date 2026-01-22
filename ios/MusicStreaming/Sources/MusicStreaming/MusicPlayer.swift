@@ -6,6 +6,7 @@
 //
 
 import Foundation
+@preconcurrency import MusicKit
 
 public struct StreamingServiceIDs: Codable, Hashable {
 	public var appleMusic: String?
@@ -27,16 +28,18 @@ public class Track {
 	public var artist: String
 	public var album: String
 	public var artworkURL: URL?
+	public var previewURL: String?
 	public var duration: TimeInterval
-	
+
 	// Provider specific IDs
 	public var serviceIDs: StreamingServiceIDs
 	
-	public init(title: String, artist: String, album: String, artworkURL: URL? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init()) {
+	public init(title: String, artist: String, album: String, artworkURL: URL? = nil, previewURL: String? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init()) {
 		self.title = title
 		self.artist = artist
 		self.album = album
 		self.artworkURL = artworkURL
+		self.previewURL = previewURL
 		self.duration = duration
 		self.serviceIDs = serviceIDs
 	}
@@ -66,46 +69,51 @@ public protocol StreamingMusicProvider {
 
 @Observable
 @MainActor
-	public class MusicPlayer {
-		public var provider: StreamingMusicProvider?
-		public var isUserPaused: Bool = false
-		public var prePlayHook: (() async -> Void)?
-		public var isSeeking: Bool = false
-
+public class MusicPlayer {
+	public var provider: StreamingMusicProvider?
+	private var fallbackProvider: AppleMusic?
+	private var hasRequestedMusicAuthorization = false
+	public var isUserPaused: Bool = false
+	public var prePlayHook: (() async -> Void)?
+	public var isSeeking: Bool = false
+	
 	public init() {
 		self.provider = nil
 	}
-
+	
 	public func setProvider(_ provider: StreamingMusicProvider) {
 		self.provider = provider
 	}
 	
 	@discardableResult
 	public func play(artist: String, song: String) async throws -> Track {
-		guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+		await requestMusicAuthorizationIfNeeded()
+		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		return try await provider.play(artist: artist, song: song)
 	}
 	
 	public func play(id: StreamingServiceIDs) async throws {
-		guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+		await requestMusicAuthorizationIfNeeded()
+		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.play(id: id)
 	}
 	
 	public func search(query: String) async throws -> [Track] {
-		guard let provider = provider else { throw MusicPlayerError.providerNotSet }
+		let provider = await resolvedProvider()
 		return try await provider.search(query: query)
 	}
 	
 	public func pause() {
 		isUserPaused = true
-		provider?.pause()
+		activeProvider?.pause()
 	}
 	public func unpause() async throws {
-		guard let provider = provider else { return }
+		await requestMusicAuthorizationIfNeeded()
+		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.unpause()
@@ -113,27 +121,50 @@ public protocol StreamingMusicProvider {
 	
 	public func stop() {
 		isUserPaused = true
-		provider?.stop()
+		activeProvider?.stop()
 	}
 	
 	public func seek(to time: TimeInterval) {
-		provider?.seek(to: time)
+		activeProvider?.seek(to: time)
 	}
 	
 	public var isPlaying: Bool {
-		provider?.isPlaying ?? false
+		activeProvider?.isPlaying ?? false
 	}
 	
 	public var currentTrack: Track? {
-		provider?.currentTrack
+		activeProvider?.currentTrack
 	}
 	
 	public var currentPlaybackTime: TimeInterval {
-		provider?.currentPlaybackTime ?? 0
+		activeProvider?.currentPlaybackTime ?? 0
 	}
-
+	
 	private func runPrePlayHook() async {
 		await prePlayHook?()
+	}
+	
+	private var activeProvider: StreamingMusicProvider? {
+		provider ?? fallbackProvider
+	}
+	
+	private func resolvedProvider() async -> StreamingMusicProvider {
+		if let provider = provider {
+			return provider
+		}
+		if fallbackProvider == nil {
+			fallbackProvider = AppleMusic()
+		}
+		return fallbackProvider!
+	}
+	
+	private func requestMusicAuthorizationIfNeeded() async {
+		guard !hasRequestedMusicAuthorization else { return }
+		let status = MusicAuthorization.currentStatus
+		if status == .notDetermined {
+			_ = await MusicAuthorization.request()
+		}
+		hasRequestedMusicAuthorization = true
 	}
 }
 
