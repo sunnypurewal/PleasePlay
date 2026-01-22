@@ -18,7 +18,7 @@ struct PlayerView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
 	@State private var microphonePermissionGranted = false
-    @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = true
+    @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
 	@State var recorder: Recorder
 	@State var speechTranscriber: SpokenWordTranscriber
 	@State var predictor: Predictor
