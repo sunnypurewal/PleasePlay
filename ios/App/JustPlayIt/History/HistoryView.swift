@@ -41,6 +41,7 @@ struct HistoryView: View {
                 }
             }
         }
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var summaryView: some View {

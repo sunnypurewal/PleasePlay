@@ -121,6 +121,7 @@ struct DiscoverView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .toolbar(.hidden, for: .navigationBar)
         .padding(24)
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
             guard isPlaying else { return }
