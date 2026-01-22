@@ -70,15 +70,15 @@ public protocol StreamingMusicProvider {
 @Observable
 @MainActor
 public class MusicPlayer {
-	public var provider: StreamingMusicProvider?
+	private var provider: StreamingMusicProvider
 	private var fallbackProvider: AppleMusic?
 	private var hasRequestedMusicAuthorization = false
 	public var isUserPaused: Bool = false
 	public var prePlayHook: (() async -> Void)?
 	public var isSeeking: Bool = false
 	
-	public init() {
-		self.provider = nil
+	public init(provider: StreamingMusicProvider = Unauthorized()) {
+		self.provider = provider
 	}
 	
 	public func setProvider(_ provider: StreamingMusicProvider) {
@@ -88,7 +88,6 @@ public class MusicPlayer {
 	@discardableResult
 	public func play(artist: String, song: String) async throws -> Track {
 		await requestMusicAuthorizationIfNeeded()
-		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		return try await provider.play(artist: artist, song: song)
@@ -96,14 +95,12 @@ public class MusicPlayer {
 	
 	public func play(id: StreamingServiceIDs) async throws {
 		await requestMusicAuthorizationIfNeeded()
-		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.play(id: id)
 	}
 	
 	public func search(query: String) async throws -> [Track] {
-		let provider = await resolvedProvider()
 		return try await provider.search(query: query)
 	}
 	
@@ -113,7 +110,6 @@ public class MusicPlayer {
 	}
 	public func unpause() async throws {
 		await requestMusicAuthorizationIfNeeded()
-		let provider = await resolvedProvider()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.unpause()
@@ -146,16 +142,6 @@ public class MusicPlayer {
 	
 	private var activeProvider: StreamingMusicProvider? {
 		provider ?? fallbackProvider
-	}
-	
-	private func resolvedProvider() async -> StreamingMusicProvider {
-		if let provider = provider {
-			return provider
-		}
-		if fallbackProvider == nil {
-			fallbackProvider = AppleMusic()
-		}
-		return fallbackProvider!
 	}
 	
 	private func requestMusicAuthorizationIfNeeded() async {

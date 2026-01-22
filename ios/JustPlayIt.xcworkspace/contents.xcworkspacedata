@@ -43,10 +43,10 @@
                location = "group:MusicPlayer.swift">
             </FileRef>
             <FileRef
-               location = "group:AuthorizationManager.swift">
+               location = "group:Unauthorized.swift">
             </FileRef>
             <FileRef
-               location = "group:Unauthenticated.swift">
+               location = "group:AuthorizationManager.swift">
             </FileRef>
             <FileRef
                location = "group:Tidal.swift">
