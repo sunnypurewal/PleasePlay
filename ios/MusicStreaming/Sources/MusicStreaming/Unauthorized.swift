@@ -1,13 +1,16 @@
+import AVFoundation
 import Foundation
+import Observation
 
 private struct UnauthorizedTrack: Codable {
 	enum CodingKeys: String, CodingKey {
-		case title, artist, album
+		case id, title, artist, album
 		case artworkURL = "artwork_url"
 		case previewURL = "preview_url"
 		case duration
 	}
 
+	let id: String
 	let title: String
 	let artist: String
 	let album: String
@@ -16,28 +19,85 @@ private struct UnauthorizedTrack: Codable {
 	let duration: TimeInterval?
 
 	var asTrack: Track {
-		Track(
+		// Replace {w} and {h} placeholders with 300 if present
+		let normalizedArtworkURL: URL? = {
+			guard let artworkURL else { return nil }
+			var urlString = artworkURL.absoluteString.removingPercentEncoding ?? artworkURL.absoluteString
+			urlString = urlString.replacingOccurrences(of: "{w}", with: "300")
+			urlString = urlString.replacingOccurrences(of: "{h}", with: "300")
+			return URL(string: urlString)
+		}()
+
+		return Track(
 			title: title,
 			artist: artist,
 			album: album,
-			artworkURL: artworkURL,
+			artworkURL: normalizedArtworkURL,
 			previewURL: previewURL,
-			duration: duration ?? 0
+			duration: 30,
+			serviceIDs: .init(appleMusic: id)
 		)
 	}
 }
 
+private enum UnauthorizedError: Error {
+	case emptyQuery
+	case songNotFound
+	case previewUnavailable
+}
+
 @MainActor
+@Observable
 public class Unauthorized: StreamingMusicProvider {
+	private let player = AVPlayer()
+	private var playbackMonitorTask: Task<Void, Never>?
+
+	public var isPlaying: Bool = false
+	public var currentTrack: Track?
+	public var currentPlaybackTime: TimeInterval = 0
+
 	public init() {}
 
-	@discardableResult
 	public func play(artist: String, song: String) async throws -> Track {
-		throw MusicPlayerError.providerNotSet
+		let query = [artist, song]
+			.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+			.filter { !$0.isEmpty }
+			.joined(separator: " ")
+
+		guard !query.isEmpty else {
+			throw UnauthorizedError.emptyQuery
+		}
+
+		let tracks = try await search(query: query)
+		guard let track = tracks.first else {
+			throw UnauthorizedError.songNotFound
+		}
+
+		return try playPreview(for: track)
 	}
 
-	public func play(id: StreamingServiceIDs) async throws {
-		throw MusicPlayerError.providerNotSet
+	@discardableResult
+	public func play(track: Track) async throws -> Track {
+		return try playPreview(for: track)
+	}
+
+	private func playPreview(for track: Track) throws -> Track {
+		guard let previewURLString = track.previewURL,
+			  let previewURL = URL(string: previewURLString) else {
+			throw UnauthorizedError.previewUnavailable
+		}
+
+		let playerItem = AVPlayerItem(url: previewURL)
+		player.replaceCurrentItem(with: playerItem)
+		player.volume = 1.0
+		player.play()
+		currentPlaybackTime = 0
+
+		currentTrack = track
+		isPlaying = true
+		startMonitoring()
+
+		return track
 	}
 
 	public func search(query: String) async throws -> [Track] {
@@ -62,19 +122,67 @@ public class Unauthorized: StreamingMusicProvider {
 		return payload.map { $0.asTrack }
 	}
 
-	public func pause() {}
-
-	public var isPlaying: Bool { false }
-
-	public var currentTrack: Track? { nil }
-
-	public func unpause() async throws {
-		throw MusicPlayerError.providerNotSet
+	public func pause() {
+		player.pause()
+		isPlaying = false
+		stopMonitoring()
 	}
 
-	public func stop() {}
+	public func unpause() async throws {
+		player.play()
+		isPlaying = true
+		startMonitoring()
+	}
 
-	public var currentPlaybackTime: TimeInterval { 0 }
+	public func stop() {
+		player.pause()
+		player.seek(to: .zero)
+		isPlaying = false
+		currentTrack = nil
+		currentPlaybackTime = 0
+		stopMonitoring()
+	}
 
-	public func seek(to time: TimeInterval) {}
+	public func seek(to time: TimeInterval) {
+		let cmTime = CMTime(seconds: time, preferredTimescale: 1_000_000)
+		player.seek(to: cmTime)
+		currentPlaybackTime = time
+	}
+
+	private func startMonitoring() {
+		stopMonitoring()
+		playbackMonitorTask = Task { @MainActor in
+			while true {
+				do {
+					try await Task.sleep(for: .seconds(0.5))
+				} catch {
+					print("Playback monitor sleep failed: \(error)")
+				}
+				guard !Task.isCancelled else { break }
+
+				isPlaying = player.timeControlStatus == .playing
+
+				currentPlaybackTime = player.currentTime().seconds
+
+				if player.timeControlStatus == .paused,
+				   let item = player.currentItem,
+				   item.asset.duration.isValid {
+					let durationSeconds = item.asset.duration.seconds
+					if durationSeconds.isFinite && player.currentTime().seconds >= durationSeconds {
+						isPlaying = false
+						break
+					}
+				}
+			}
+			if Task.isCancelled {
+				return
+			}
+			playbackMonitorTask = nil
+		}
+	}
+
+	private func stopMonitoring() {
+		playbackMonitorTask?.cancel()
+		playbackMonitorTask = nil
+	}
 }

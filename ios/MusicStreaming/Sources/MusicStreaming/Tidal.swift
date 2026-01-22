@@ -85,22 +85,24 @@ public class Tidal: StreamingMusicProvider {
 		}
     }
     
-	    public func play(id: StreamingServiceIDs) async throws {
-	        guard let player = player else { throw TidalError.playerNotInitialized }
-			guard let trackID = id.tidal else { throw TidalError.songNotFound }
-	        
-	        let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
-	        player.load(mediaProduct)
-	        player.play()
-	    }
-	    
-	        public func search(query: String) async throws -> [Track] {
-	    
-	            // Skipping implementation for now
-	    
-	            return []
-	    
-	        }
+    @discardableResult
+    public func play(track: Track) async throws -> Track {
+        guard let player = player else { throw TidalError.playerNotInitialized }
+        if let trackID = track.serviceIDs.tidal {
+            let mediaProduct = MediaProduct(productType: .TRACK, productId: trackID)
+            player.load(mediaProduct)
+            player.play()
+            currentTrack = track
+            isPlaying = true
+            return track
+        }
+        return try await play(artist: track.artist, song: track.title)
+    }
+
+    public func search(query: String) async throws -> [Track] {
+        // Skipping implementation for now
+        return []
+    }
 	    
 	        
 	    

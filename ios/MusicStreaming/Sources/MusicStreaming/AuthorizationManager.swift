@@ -40,7 +40,11 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
 			scopes: [] // Example scopes
 		)
 		TidalAuth.shared.config(config: config)
-		try? TidalAuth.shared.logout()
+		do {
+			try TidalAuth.shared.logout()
+		} catch {
+			print("Failed to logout Tidal: \(error)")
+		}
         Task {
             await checkAuthorization()
         }

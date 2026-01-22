@@ -277,7 +277,11 @@ private struct HistoryRow: View {
             heartPulse = true
         }
         Task {
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 200_000_000)
+            } catch {
+                print("Like animation sleep failed: \(error)")
+            }
             await MainActor.run {
                 heartPulse = false
             }
@@ -286,7 +290,12 @@ private struct HistoryRow: View {
 
     private func playSong() {
         Task {
-            _ = try? await musicPlayer.play(id: StreamingServiceIDs(playedTrack: song))
+            let track = Track(playedTrack: song)
+            do {
+                _ = try await musicPlayer.play(track: track)
+            } catch {
+                print("Failed to play history track: \(error)")
+            }
             await MainActor.run {
                 song.playCount += 1
                 song.playHistory.append(Date())

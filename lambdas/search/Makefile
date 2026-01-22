@@ -27,7 +27,7 @@ ZIP_FILE      := function.zip
 
 
 # Default payload for invocation
-PAYLOAD       := '{"body": "Metallica"}'
+PAYLOAD       := '{"body": "The Beatles"}'
 
 all: build zip
 

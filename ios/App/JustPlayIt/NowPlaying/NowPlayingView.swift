@@ -78,7 +78,11 @@ struct NowPlayingView: View {
                         musicPlayer.seek(to: dragValue)
                         if shouldResume {
                             Task {
-                                try? await musicPlayer.unpause()
+                                do {
+                                    try await musicPlayer.unpause()
+                                } catch {
+                                    print("Failed to unpause after seeking: \(error)")
+                                }
                                 showPauseDuringSeek = false
                             }
                         } else {
@@ -114,7 +118,11 @@ struct NowPlayingView: View {
 						musicPlayer.pause()
 					} else {
 						Task {
-							try? await musicPlayer.unpause()
+							do {
+								try await musicPlayer.unpause()
+							} catch {
+								print("Failed to unpause from now playing view: \(error)")
+							}
 						}
 					}
                 }) {

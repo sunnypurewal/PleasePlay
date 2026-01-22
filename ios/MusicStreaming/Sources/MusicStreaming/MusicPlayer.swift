@@ -53,7 +53,8 @@ public protocol StreamingMusicProvider {
 	@discardableResult
 	func play(artist: String, song: String) async throws -> Track
 	
-	func play(id: StreamingServiceIDs) async throws
+	@discardableResult
+	func play(track: Track) async throws -> Track
 	
 	func search(query: String) async throws -> [Track]
 	
@@ -76,13 +77,17 @@ public class MusicPlayer {
 	public var isUserPaused: Bool = false
 	public var prePlayHook: (() async -> Void)?
 	public var isSeeking: Bool = false
-	
+	public private(set) var isPlaying: Bool = false
+
 	public init(provider: StreamingMusicProvider = Unauthorized()) {
 		self.provider = provider
+		startProviderPlaybackMonitor()
 	}
 	
 	public func setProvider(_ provider: StreamingMusicProvider) {
 		self.provider = provider
+		updatePlayingState()
+		startProviderPlaybackMonitor()
 	}
 	
 	@discardableResult
@@ -90,14 +95,19 @@ public class MusicPlayer {
 		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
-		return try await provider.play(artist: artist, song: song)
+		let track = try await provider.play(artist: artist, song: song)
+		updatePlayingState()
+		return track
 	}
-	
-	public func play(id: StreamingServiceIDs) async throws {
+
+	@discardableResult
+	public func play(track: Track) async throws -> Track {
 		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
-		try await provider.play(id: id)
+		let playedTrack = try await provider.play(track: track)
+		updatePlayingState()
+		return playedTrack
 	}
 	
 	public func search(query: String) async throws -> [Track] {
@@ -107,27 +117,26 @@ public class MusicPlayer {
 	public func pause() {
 		isUserPaused = true
 		activeProvider?.pause()
+		updatePlayingState()
 	}
 	public func unpause() async throws {
 		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.unpause()
+		updatePlayingState()
 	}
-	
+
 	public func stop() {
 		isUserPaused = true
 		activeProvider?.stop()
+		updatePlayingState()
 	}
 	
 	public func seek(to time: TimeInterval) {
 		activeProvider?.seek(to: time)
 	}
-	
-	public var isPlaying: Bool {
-		activeProvider?.isPlaying ?? false
-	}
-	
+
 	public var currentTrack: Track? {
 		activeProvider?.currentTrack
 	}
@@ -142,6 +151,39 @@ public class MusicPlayer {
 	
 	private var activeProvider: StreamingMusicProvider? {
 		provider ?? fallbackProvider
+	}
+
+	private func updatePlayingState() {
+		let newValue = activeProvider?.isPlaying ?? false
+		if isPlaying != newValue {
+			isPlaying = newValue
+		}
+	}
+
+	private var providerPlaybackMonitorTask: Task<Void, Never>?
+
+	private func startProviderPlaybackMonitor() {
+		stopProviderPlaybackMonitor()
+		providerPlaybackMonitorTask = Task { @MainActor [weak self] in
+			while true {
+				do {
+					try await Task.sleep(for: .milliseconds(300))
+				} catch {
+					break
+				}
+				guard !Task.isCancelled else { break }
+				guard let strongSelf = self else { break }
+				strongSelf.updatePlayingState()
+			}
+			if let strongSelf = self {
+				strongSelf.providerPlaybackMonitorTask = nil
+			}
+		}
+	}
+
+	private func stopProviderPlaybackMonitor() {
+		providerPlaybackMonitorTask?.cancel()
+		providerPlaybackMonitorTask = nil
 	}
 	
 	private func requestMusicAuthorizationIfNeeded() async {

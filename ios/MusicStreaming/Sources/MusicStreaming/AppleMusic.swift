@@ -22,11 +22,9 @@ public class AppleMusic: StreamingMusicProvider {
     
     @discardableResult
     public func play(artist: String, song: String) async throws -> Track {
-        // Search Apple Music Catalog for the song using title and artist
         let searchTerm = "\(song) \(artist)"
         let searchRequest = MusicCatalogSearchRequest(term: searchTerm, types: [Song.self])
         
-        // Execute the search
         let response: MusicCatalogSearchResponse
         do {
             response = try await searchRequest.response()
@@ -51,46 +49,30 @@ public class AppleMusic: StreamingMusicProvider {
             throw AppleMusicError.songNotFound
         }
         
-        // Check if we found any songs
         guard let songItem = response.songs.first else {
             throw AppleMusicError.songNotFound
         }
         
-        // Set the queue and play
-        player.queue = [songItem]
-        try await player.play()
-        
-        let newTrack = Track(
-            title: songItem.title,
-            artist: songItem.artistName,
-            album: songItem.albumTitle ?? "",
-            artworkURL: songItem.artwork?.url(width: 300, height: 300),
-            duration: songItem.duration ?? 0,
-            serviceIDs: .init(appleMusic: songItem.id.rawValue)
-        )
-        
-        self.currentTrack = newTrack
-        isPlaying = true
-        startMonitoring()
-        
-        return newTrack
+        return try await playSongItem(songItem)
     }
-    
-    public func play(id: StreamingServiceIDs) async throws {
-        // Play by ID
-		guard let trackID = id.appleMusic else {
-			throw AppleMusicError.songNotFound
-		}
-        let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(trackID))
-        let response = try await request.response()
-        
-        guard let songItem = response.items.first else {
-            throw AppleMusicError.songNotFound
-        }
 
+    @discardableResult
+    public func play(track: Track) async throws -> Track {
+        if let trackID = track.serviceIDs.appleMusic {
+            let request = MusicCatalogResourceRequest<Song>(matching: \.id, equalTo: MusicItemID(trackID))
+            let response = try await request.response()
+            guard let songItem = response.items.first else {
+                throw AppleMusicError.songNotFound
+            }
+            return try await playSongItem(songItem)
+        }
+        return try await play(artist: track.artist, song: track.title)
+    }
+
+    private func playSongItem(_ songItem: Song) async throws -> Track {
         player.queue = [songItem]
         try await player.play()
-        
+
         let playingTrack = Track(
             title: songItem.title,
             artist: songItem.artistName,
@@ -99,10 +81,12 @@ public class AppleMusic: StreamingMusicProvider {
             duration: songItem.duration ?? 0,
             serviceIDs: .init(appleMusic: songItem.id.rawValue)
         )
-        
+
         self.currentTrack = playingTrack
         isPlaying = true
         startMonitoring()
+
+        return playingTrack
     }
     
     public func search(query: String) async throws -> [Track] {
@@ -151,7 +135,11 @@ public class AppleMusic: StreamingMusicProvider {
         // Keep this task on the main actor so all accesses to self are serialized.
         playbackMonitorTask = Task { @MainActor in
             while true {
-                try? await Task.sleep(for: .seconds(0.5))
+                do {
+                    try await Task.sleep(for: .seconds(0.5))
+                } catch {
+                    print("AppleMusic playback monitor sleep failed: \(error)")
+                }
                 guard !Task.isCancelled else { break }
                 
                 let status = self.player.state.playbackStatus
@@ -176,4 +164,3 @@ public class AppleMusic: StreamingMusicProvider {
 enum AppleMusicError: Error {
     case songNotFound
 }
-

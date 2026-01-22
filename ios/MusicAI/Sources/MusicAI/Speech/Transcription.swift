@@ -17,6 +17,7 @@ public final class SpokenWordTranscriber {
 	private var transcriber: SpeechTranscriber?
 	private var analyzer: SpeechAnalyzer?
 	private var recognizerTask: Task<(), Error>?
+	private var audioStreamTask: Task<Void, Never>?
 	
 	static let magenta = Color(red: 0.54, green: 0.02, blue: 0.6).opacity(0.8) // #e81cff
 	
@@ -40,6 +41,10 @@ public final class SpokenWordTranscriber {
 	}
 	
 	public func setUpTranscriber() async throws {
+		if transcriber != nil {
+			return
+		}
+
 		transcriber = SpeechTranscriber(locale: Locale.current,
 										transcriptionOptions: [],
 										reportingOptions: [.fastResults],
@@ -75,10 +80,7 @@ public final class SpokenWordTranscriber {
                     guard let self else { break }
 					let text = result.text
 					if result.isFinal {
-						print("FINAL RESULT")
-					}
-					print(String(text.characters))
-					if result.isFinal {
+						print("Recognized text: \(text)")
 						finalizedTranscript += text
 						volatileTranscript = ""
 					} else {
@@ -104,12 +106,36 @@ public final class SpokenWordTranscriber {
 		
 		inputBuilder.yield(input)
 	}
+
+	public func startTranscribing(from audioStream: AsyncStream<AudioData>) {
+		audioStreamTask?.cancel()
+		audioStreamTask = Task { [weak self] in
+			do {
+				for await audioData in audioStream {
+					try Task.checkCancellation()
+					guard let strongSelf = self else { break }
+					try await strongSelf.streamAudioToTranscriber(audioData.buffer)
+				}
+			} catch is CancellationError {
+				// Swallow cancellation.
+			} catch {
+				print("Failed to feed audio into analyzer: \(error)")
+			}
+		}
+	}
 	
 	public func finishTranscribing() async throws {
+		audioStreamTask?.cancel()
+		audioStreamTask = nil
 		inputBuilder?.finish()
 		try await analyzer?.finalizeAndFinishThroughEndOfInput()
 		recognizerTask?.cancel()
 		recognizerTask = nil
+		transcriber = nil
+		analyzer = nil
+		analyzerFormat = nil
+		inputSequence = nil
+		inputBuilder = nil
 	}
 }
 

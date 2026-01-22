@@ -86,7 +86,11 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         if let duration {
             stopTask?.cancel()
             stopTask = Task { [weak self] in
-                try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                } catch {
+                    print("Shazam stop task sleep failed: \(error)")
+                }
                 await self?.stopContinuousRecognition()
             }
         }
@@ -105,7 +109,11 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         inputNode.removeTap(onBus: 0)
         audioEngine.stop()
         audioEngine.reset()
-        try? audioSession.setActive(false)
+        do {
+            try audioSession.setActive(false)
+        } catch {
+            print("Failed to deactivate audio session: \(error)")
+        }
     }
 
     private func configureAudioSessionIfNeeded() async throws {

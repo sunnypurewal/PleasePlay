@@ -28,7 +28,7 @@ public class Recorder {
 	}
 	
 	private func setup() async throws {
-		guard await isAuthorized() else {
+		guard await isMicrophoneAuthorized() else {
 			print("user denied mic permission")
 			return
 		}
@@ -91,7 +91,11 @@ public class Recorder {
 
     func deactivateAudioSession() {
         let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        do {
+            try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Failed to deactivate audio session: \(error)")
+        }
     }
 #endif
 	
@@ -119,7 +123,6 @@ public class Recorder {
 										 bufferSize: 4096,
 										 format: tapFormat) { [weak self] (buffer, time) in
 			guard let self else { return }
-			writeBufferToDisk(buffer: buffer)
             if let copy = buffer.copy() as? AVAudioPCMBuffer {
                 self.outputContinuation?.yield(AudioData(buffer: copy, time: time))
             }

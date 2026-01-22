@@ -20,25 +20,20 @@ struct HomeView: View {
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var microphonePermissionGranted = false
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
-    @State var recorder: Recorder
-    @State var speechTranscriber: SpokenWordTranscriber
-    @State var predictor: Predictor
+    private let input = MicrophoneInput()
+    @State private var speechTranscriber = SpokenWordTranscriber()
+    @State private var predictor = Predictor()
+    @State private var isMicrophoneStreaming = false
     @State private var searchResults: [Track] = []
     @State private var isSearching = false
     @State private var hasAppeared = false
+    @State private var hasStartedInitialListening = false
     @State private var voiceCommandSuggestion = "Blackbird by The Beatles"
     @State private var recognizedArtist = ""
     @State private var recognizedTitle = ""
     @State private var isPlayingDebounced = false
     @State private var playbackDebounceTask: Task<Void, Never>?
 
-    init() {
-        let transcriber = SpokenWordTranscriber()
-        recorder = Recorder(transcriber: transcriber)
-        speechTranscriber = transcriber
-        predictor = Predictor()
-    }
-    
     var body: some View {
         VStack {
             // Microphone Permission Banner
@@ -47,8 +42,13 @@ struct HomeView: View {
             }
             
             if !isPlayingDebounced && !musicPlayer.isSeeking {
-                MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
-                if recorder.isRecording {
+                MicrophoneStatusView(
+                    isListening: isMicrophoneStreaming,
+                    isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
+                    toggleListening: { await toggleMicrophoneListening() },
+                    onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
+                )
+                if isMicrophoneStreaming {
                     Text("Ask me to play a song or artist.")
                     Text("\"**Please play** \(voiceCommandSuggestion)\"")
 						.font(.title3)
@@ -74,16 +74,20 @@ struct HomeView: View {
                         .font(.headline)
                         .padding(.horizontal)
                     
-                    List(searchResults, id: \.serviceIDs) { track in
-                        Button(action: {
-                            Task {
-                                await cancelRecognitionBeforePlayback()
-                                try? await musicPlayer.play(id: track.serviceIDs)
-                                await MainActor.run {
-                                    saveTrack(track)
-                                }
-                            }
-                        }) {
+                            List(searchResults, id: \.serviceIDs) { track in
+                                Button(action: {
+                                    Task {
+                                        await cancelRecognitionBeforePlayback()
+                                        do {
+                                            try await musicPlayer.play(track: track)
+                                        } catch {
+                                            print("Failed to play selected track: \(error)")
+                                        }
+                                        await MainActor.run {
+                                            saveTrack(track)
+                                        }
+                                    }
+                                }) {
                             HStack {
                                 if let url = track.artworkURL {
                                     AsyncImage(url: url) { image in
@@ -126,6 +130,7 @@ struct HomeView: View {
             schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
             checkMicrophonePermission(shouldStartListening: !hasAppeared)
             hasAppeared = true
+            startInitialListeningIfNeeded()
             refreshVoiceCommandSuggestion()
         }
         .onChange(of: playedTracks) { _, _ in
@@ -170,21 +175,30 @@ struct HomeView: View {
                         }
                         isSearching = true
                         // Perform search
-                        async let searchTask = musicPlayer.search(query: searchQuery)
+                    async let searchTask = musicPlayer.search(query: searchQuery)
 
-                        var playedTrack: Track?
-                        if !artist.isEmpty || !title.isEmpty {
-                            await cancelRecognitionBeforePlayback()
-                            playedTrack = try? await musicPlayer.play(artist: artist, song: title)
+                    var playedTrack: Track?
+                    if !artist.isEmpty || !title.isEmpty {
+                        await cancelRecognitionBeforePlayback()
+                        do {
+                            playedTrack = try await musicPlayer.play(artist: artist, song: title)
+                        } catch {
+                            print("Failed to play predicted track: \(error)")
                         }
+                    }
 
-                        let results = try? await searchTask
+                    var results: [Track] = []
+                    do {
+                        results = try await searchTask
+                    } catch {
+                        print("Failed to fetch search results: \(error)")
+                    }
 
-                        await MainActor.run {
-                            if let track = playedTrack {
-                                saveTrack(track)
-                            }
-                            let allResults = results ?? []
+                    await MainActor.run {
+                        if let track = playedTrack {
+                            saveTrack(track)
+                        }
+                        let allResults = results
                             if title.isEmpty && !artist.isEmpty {
                                 self.searchResults = allResults
                             } else {
@@ -203,18 +217,28 @@ struct HomeView: View {
         }
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
             schedulePlaybackStateDebounce(isPlaying: isPlaying)
-            if isPlaying {
-                recorder.pauseRecording()
-            } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-                Task { try? await recorder.record() }
+            Task {
+                if isPlaying {
+                    await stopMicrophoneStreaming()
+                } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+                    do {
+                        try await startMicrophoneStreaming()
+                    } catch {
+                        print("Failed to resume microphone streaming: \(error)")
+                    }
+                }
             }
         }
         .onChange(of: recognitionState.isMusicRecognitionActive) { _, isActive in
             Task {
                 if isActive {
-                    recorder.pauseRecording()
+                    await stopMicrophoneStreaming()
                 } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !musicPlayer.isPlaying && microphonePermissionGranted {
-                    try? await recorder.record()
+                    do {
+                        try await startMicrophoneStreaming()
+                    } catch {
+                        print("Failed to resume microphone streaming after recognition: \(error)")
+                    }
                 }
             }
         }
@@ -247,7 +271,11 @@ struct HomeView: View {
         }
 
         playbackDebounceTask = Task {
-            try? await Task.sleep(nanoseconds: 250_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 250_000_000)
+            } catch {
+                print("Playback debounce sleep failed: \(error)")
+            }
             if Task.isCancelled { return }
             await MainActor.run {
                 playbackDebounceTask = nil
@@ -282,8 +310,12 @@ struct HomeView: View {
         
         microphonePermissionGranted = isGranted
         if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-            Task { 
-                try await recorder.record()
+            Task {
+                do {
+                    try await startMicrophoneStreaming()
+                } catch {
+                    print("Failed to start microphone streaming: \(error)")
+                }
             }
         }
     }
@@ -302,16 +334,22 @@ struct HomeView: View {
         let wasPreviouslyGranted = microphonePermissionGranted
         microphonePermissionGranted = granted
         guard granted && !wasPreviouslyGranted else { return }
-        startRecordingAfterInitialPermissionGrant()
+        startInitialListeningIfNeeded()
     }
 
-    private func startRecordingAfterInitialPermissionGrant() {
-        guard !musicPlayer.isPlaying,
-              recognitionState.shouldAutomaticallyListenForCommands,
+    private func startInitialListeningIfNeeded() {
+        guard !hasStartedInitialListening,
+              microphonePermissionGranted,
+              !musicPlayer.isPlaying,
               !recognitionState.isMusicRecognitionActive else { return }
 
+        hasStartedInitialListening = true
         Task {
-            try? await recorder.record()
+            do {
+                try await startMicrophoneStreaming()
+            } catch {
+                print("Failed to start initial streaming: \(error)")
+            }
         }
     }
 
@@ -340,6 +378,7 @@ struct HomeView: View {
                     artist: track.artist,
                     album: track.album,
                     artworkURL: track.artworkURL,
+                    previewURL: track.previewURL,
                     duration: track.duration,
                     appleMusicID: track.serviceIDs.appleMusic,
                     spotifyID: track.serviceIDs.spotify,
@@ -365,6 +404,66 @@ struct HomeView: View {
             suggestion = "Blackbird by The Beatles"
         }
         voiceCommandSuggestion = suggestion
+    }
+
+    @MainActor
+    private func startMicrophoneStreaming() async throws {
+        guard !isMicrophoneStreaming else { return }
+        do {
+            try await speechTranscriber.setUpTranscriber()
+            let stream = try await input.startStreaming()
+            speechTranscriber.startTranscribing(from: stream)
+        } catch {
+            await input.stopStreaming()
+            throw error
+        }
+        isMicrophoneStreaming = true
+    }
+
+    @MainActor
+    private func stopMicrophoneStreaming() async {
+        guard isMicrophoneStreaming else { return }
+        await input.stopStreaming()
+        do {
+            try await speechTranscriber.finishTranscribing()
+        } catch {
+            print("Failed to finish transcribing: \(error)")
+        }
+        isMicrophoneStreaming = false
+    }
+
+    @MainActor
+    private func toggleMicrophoneListening() async {
+        guard !recognitionState.isMusicRecognitionActive else { return }
+        if isMicrophoneStreaming {
+            await stopMicrophoneStreaming()
+        } else if microphonePermissionGranted {
+            do {
+                try await startMicrophoneStreaming()
+            } catch {
+                print("Failed to start microphone streaming: \(error)")
+            }
+        }
+    }
+
+    @MainActor
+    private func handleAutomaticListeningChange(_ isEnabled: Bool) async {
+        if recognitionState.isMusicRecognitionActive {
+            return
+        }
+
+        if isEnabled {
+            recognitionState.enableAutomaticCommandListening()
+            guard microphonePermissionGranted else { return }
+            do {
+                try await startMicrophoneStreaming()
+            } catch {
+                print("Failed to start microphone streaming after enabling auto listen: \(error)")
+            }
+        } else {
+            recognitionState.disableAutomaticCommandListening()
+            await stopMicrophoneStreaming()
+        }
     }
 }
 

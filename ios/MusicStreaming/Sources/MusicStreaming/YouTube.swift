@@ -24,7 +24,11 @@ public class YouTube: StreamingMusicProvider {
         return track
     }
     
-    public func play(id: StreamingServiceIDs) async throws {
+    @discardableResult
+    public func play(track: Track) async throws -> Track {
+        self.currentTrack = track
+        isPlaying = true
+        return track
     }
     
     public func search(query: String) async throws -> [Track] {

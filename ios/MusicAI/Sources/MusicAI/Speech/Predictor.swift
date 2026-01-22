@@ -11,7 +11,8 @@ import Tokenizers
 
 @available(iOS 26.0, *)
 public actor Predictor {
-	private var model: MusicNER?
+	private var model: MusicNER!
+	private var tokenizer: (any Tokenizer)!
 	private var isLoading = false
     
     public init() {}
@@ -19,7 +20,8 @@ public actor Predictor {
 	public func loadModel() async throws {
 		guard model == nil else { return }
 		isLoading = true
-		self.model = try MusicNER()
+		model = try MusicNER()
+		tokenizer = try await loadBertTokenizer(fromVocabFile: "vocab", withExtension: "txt")
 		isLoading = false
 		print("MusicNER model loaded successfully")
 	}
@@ -42,8 +44,6 @@ public actor Predictor {
 	}
 
 	private func runNER(on text: String, model: MusicNER) async throws -> [String: Any] {
-		print("Loading tokenizer and encoding text")
-		let tokenizer = try await loadBertTokenizer(fromVocabFile: "vocab", withExtension: "txt")
 		let tokens = tokenizer.encode(text: text) // [Int]
 		
 		// Prepare inputs

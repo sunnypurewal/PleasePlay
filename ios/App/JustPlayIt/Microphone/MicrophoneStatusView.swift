@@ -3,77 +3,52 @@
 //  JustPlayIt
 //
 
-import MusicAI
 import SwiftUI
 
 struct MicrophoneStatusView: View {
-    @Bindable var recorder: Recorder
+    let isListening: Bool
     @Binding var isAutomaticListeningEnabled: Bool
     @EnvironmentObject private var recognitionState: RecognitionListeningState
+    let toggleListening: () async -> Void
+    let onAutomaticListeningChanged: (Bool) async -> Void
     @State private var pulseScale: CGFloat = 1.0
-    
+
     var body: some View {
         VStack(spacing: 12) {
             HStack {
                 Spacer()
-                
+
                 Button(action: {
                     guard !recognitionState.isMusicRecognitionActive else { return }
-                    Task { try? await recorder.toggleRecording() }
+                    Task {
+                        await toggleListening()
+                    }
                 }) {
                     if recognitionState.isMusicRecognitionActive {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color.orange)
-                                .frame(width: 8, height: 8)
-                            Text("Voice listening paused")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                        }
-                    } else if recorder.isRecording {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 8, height: 8)
-                                .scaleEffect(pulseScale)
-                                .onAppear {
-                                    withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
-                                        pulseScale = 1.5
-                                    }
-                                }
-                            Text("Microphone is listening")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                        }
+                        statusLabel(text: "Voice listening paused", accent: .orange)
+                    } else if isListening {
+                        listeningStatusLabel()
                     } else {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color.secondary.opacity(0.5))
-                                .frame(width: 8, height: 8)
-                            Text("Microphone is not listening")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
-                        }
+                        statusLabel(text: "Microphone is not listening", accent: .secondary.opacity(0.5))
                     }
                 }
                 .buttonStyle(.plain)
-                
+
                 Button(action: {
                     guard !recognitionState.isMusicRecognitionActive else { return }
-                    Task { try? await recorder.toggleRecording() }
+                    Task {
+                        await toggleListening()
+                    }
                 }) {
-                    Image(systemName: recorder.isRecording ? "mic.fill" : "mic.slash.fill")
+                    Image(systemName: isListening ? "mic.fill" : "mic.slash.fill")
                         .font(.title3)
-                        .foregroundColor(recorder.isRecording ? .accentColor : .secondary)
+                        .foregroundColor(isListening ? .accentColor : .secondary)
                         .padding(10)
                         .background(Color.secondary.opacity(0.1))
                         .clipShape(Circle())
                 }
             }
-            
+
             HStack(spacing: 8) {
                 Spacer()
                 Text("Auto Listen")
@@ -89,21 +64,40 @@ struct MicrophoneStatusView: View {
         .padding(.top, 8)
         .onChange(of: isAutomaticListeningEnabled) { _, isEnabled in
             Task {
-                if recognitionState.isMusicRecognitionActive {
-                    return
-                }
-                if isEnabled {
-                    recognitionState.enableAutomaticCommandListening()
-                    if !recorder.isRecording {
-                        try? await recorder.record()
-                    }
-                } else {
-                    recognitionState.disableAutomaticCommandListening()
-                    if recorder.isRecording {
-                        try? await recorder.stopRecording()
-                    }
-                }
+                await onAutomaticListeningChanged(isEnabled)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func statusLabel(text: String, accent: Color) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(accent)
+                .frame(width: 8, height: 8)
+            Text(text)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func listeningStatusLabel() -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 8, height: 8)
+                .scaleEffect(pulseScale)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                        pulseScale = 1.5
+                    }
+                }
+            Text("Microphone is listening")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
         }
     }
 }

@@ -16,6 +16,7 @@ type AppleMusicResponse struct {
 	Results struct {
 		Songs struct {
 			Data []struct {
+				ID         string `json:"id"`
 				Attributes struct {
 					Name             string `json:"name"`
 					ArtistName       string `json:"artistName"`
@@ -34,6 +35,7 @@ type AppleMusicResponse struct {
 }
 
 type Track struct {
+	ID         string `json:"id"`
 	Title      string `json:"title"`
 	Artist     string `json:"artist"`
 	Album      string `json:"album"`
@@ -130,6 +132,7 @@ xpZ3aOrY
 		}
 
 		tracks = append(tracks, Track{
+			ID:         song.ID,
 			Title:      song.Attributes.Name,
 			Artist:     song.Attributes.ArtistName,
 			Album:      song.Attributes.AlbumName,

@@ -33,21 +33,32 @@ struct MiniPlayerView: View {
                         )
                 }
                 
-                Text(currentSong.title)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(currentSong.title)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+
+                    Text(currentSong.artist)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
                 
                 Spacer()
                 
                 Button(action: {
-                    if musicPlayer.isPlaying {
-                        musicPlayer.pause()
-                    } else {
-                        Task {
-                            try? await musicPlayer.unpause()
+                if musicPlayer.isPlaying {
+                    musicPlayer.pause()
+                } else {
+                    Task {
+                        do {
+                            try await musicPlayer.unpause()
+                        } catch {
+                            print("Failed to unpause from mini player: \(error)")
                         }
                     }
-                }) {
+                }
+            }) {
                     Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
                 }

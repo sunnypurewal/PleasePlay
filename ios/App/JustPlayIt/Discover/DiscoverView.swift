@@ -245,7 +245,11 @@ struct DiscoverView: View {
         }
         continuousStopTask?.cancel()
         continuousStopTask = Task {
-            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            do {
+                try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+            } catch {
+                print("Discover timed recognition sleep failed: \(error)")
+            }
             await MainActor.run {
                 isContinuousRecognizing = false
                 isTimedRecognizing = false
@@ -283,7 +287,11 @@ struct DiscoverView: View {
         let wasPlaying = wasPlayingBeforeRecognition
         wasPlayingBeforeRecognition = false
         guard wasPlaying, recognitionState.shouldResumePlaybackAfterRecognition else { return }
-        try? await musicPlayer.unpause()
+        do {
+            try await musicPlayer.unpause()
+        } catch {
+            print("Failed to unpause music player after recognition: \(error)")
+        }
     }
 
     @MainActor
@@ -334,6 +342,7 @@ struct DiscoverView: View {
             artist: result.artist,
             album: result.album ?? "Unknown Album",
             artworkURL: result.artworkUrl,
+            previewURL: nil,
             duration: 0,
             appleMusicID: appleMusicID,
             spotifyID: nil,
