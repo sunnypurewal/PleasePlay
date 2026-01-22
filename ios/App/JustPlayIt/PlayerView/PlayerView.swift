@@ -264,7 +264,10 @@ struct PlayerView: View {
                     album: track.album,
                     artworkURL: track.artworkURL,
                     duration: track.duration,
-                    serviceIDs: track.serviceIDs.toMusicServiceDictionary()
+                    appleMusicID: track.serviceIDs.appleMusic,
+                    spotifyID: track.serviceIDs.spotify,
+                    tidalID: track.serviceIDs.tidal,
+                    youTubeID: track.serviceIDs.youtube
                 )
                 modelContext.insert(playedTrack)
             }

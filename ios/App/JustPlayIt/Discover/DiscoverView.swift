@@ -220,10 +220,8 @@ struct DiscoverView: View {
     @MainActor
     private func addToHistory(from result: MusicRecognitionResult) {
         let recognizedDate = result.recognizedAt
-        var serviceIDs: [MusicService: String] = [:]
-        if let storefrontId = result.storefrontId {
-            serviceIDs[.appleMusic] = storefrontId
-        }
+        let appleMusicID = result.storefrontId
+        let shazamID = result.id
 
         // Build a predicate that SwiftData supports
         let descriptor: FetchDescriptor<PlayedTrack>
@@ -250,10 +248,11 @@ struct DiscoverView: View {
                 existingTrack.recognizedByShazam = true
                 existingTrack.recognizedAt = recognizedDate
                 existingTrack.recognizedHistory.append(recognizedDate)
-                // Keep appleMusicID in sync if available
-                if let amId = result.storefrontId {
-                    existingTrack.appleMusicID = amId
-                    existingTrack.serviceIDs[.appleMusic] = amId
+                if existingTrack.appleMusicID == nil, let appleMusicID {
+                    existingTrack.appleMusicID = appleMusicID
+                }
+                if existingTrack.shazamID == nil, let shazamID {
+                    existingTrack.shazamID = shazamID
                 }
                 return
             }
@@ -267,7 +266,11 @@ struct DiscoverView: View {
             album: result.album ?? "Unknown Album",
             artworkURL: result.artworkUrl,
             duration: 0,
-            serviceIDs: serviceIDs,
+            appleMusicID: appleMusicID,
+            spotifyID: nil,
+            tidalID: nil,
+            youTubeID: nil,
+            shazamID: shazamID,
             lastPlayedAt: recognizedDate,
             playCount: 0,
             playHistory: [],
@@ -275,8 +278,6 @@ struct DiscoverView: View {
             recognizedAt: recognizedDate,
             recognizedHistory: [recognizedDate]
         )
-        // Ensure appleMusicID is set (constructor handles it from serviceIDs)
-        track.appleMusicID = result.storefrontId ?? track.appleMusicID
         modelContext.insert(track)
     }
 }

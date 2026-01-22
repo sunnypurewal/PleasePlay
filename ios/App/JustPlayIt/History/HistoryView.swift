@@ -19,7 +19,7 @@ struct HistoryView: View {
                 List(songs) { song in
                     Button(action: {
                         Task {
-                            _ = try? await musicPlayer.play(id: StreamingServiceIDs(song.serviceIDs))
+                            _ = try? await musicPlayer.play(id: StreamingServiceIDs(playedTrack: song))
                             await MainActor.run {
                                 song.playCount += 1
                                 song.playHistory.append(Date())
@@ -82,8 +82,8 @@ struct HistoryView: View {
 
 #Preview {
     HistoryView(songs: [
-        PlayedTrack(title: "Shake It Off", artist: "Taylor Swift", album: "1989", artworkURL: nil, duration: 200, serviceIDs: [:]),
-        PlayedTrack(title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200, serviceIDs: [:])
+        PlayedTrack(title: "Shake It Off", artist: "Taylor Swift", album: "1989", artworkURL: nil, duration: 200),
+        PlayedTrack(title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200)
     ])
     .environment(MusicPlayer())
 }

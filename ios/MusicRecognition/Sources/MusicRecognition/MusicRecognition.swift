@@ -1,6 +1,7 @@
 import Foundation
 
 public struct MusicRecognitionResult: Sendable, Equatable {
+    public let id: String?
     public let title: String
     public let artist: String
     public let album: String?
@@ -9,6 +10,7 @@ public struct MusicRecognitionResult: Sendable, Equatable {
     public let recognizedAt: Date
 
     public init(
+        id: String? = nil,
         title: String,
         artist: String,
         album: String?,
@@ -16,6 +18,7 @@ public struct MusicRecognitionResult: Sendable, Equatable {
         storefrontId: String?,
         recognizedAt: Date = Date()
     ) {
+        self.id = id
         self.title = title
         self.artist = artist
         self.album = album

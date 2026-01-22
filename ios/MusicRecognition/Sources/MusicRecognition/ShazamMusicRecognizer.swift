@@ -159,6 +159,7 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         recognizedKeys.insert(matchKey)
 
         let result = MusicRecognitionResult(
+            id: mediaItem.shazamID,
             title: mediaItem.title ?? "Unknown Title",
             artist: mediaItem.artist ?? "Unknown Artist",
             album: mediaItem.subtitle ?? "Unknown Album",
