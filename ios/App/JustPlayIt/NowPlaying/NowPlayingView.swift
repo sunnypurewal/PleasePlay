@@ -8,6 +8,7 @@ struct NowPlayingView: View {
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
     @State private var wasPlayingBeforeSeek = false
+    @State private var showPauseDuringSeek = false
     
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(max(0, time)) / 60
@@ -65,16 +66,22 @@ struct NowPlayingView: View {
                     isDragging = editing
                     if editing {
                         wasPlayingBeforeSeek = musicPlayer.isPlaying
+                        showPauseDuringSeek = musicPlayer.isPlaying
                         if musicPlayer.isPlaying {
                             musicPlayer.pause()
                         }
                         dragValue = musicPlayer.currentPlaybackTime
                     } else {
+                        let shouldResume = wasPlayingBeforeSeek
+                        wasPlayingBeforeSeek = false
                         musicPlayer.seek(to: dragValue)
-                        if wasPlayingBeforeSeek {
+                        if shouldResume {
                             Task {
                                 try? await musicPlayer.unpause()
+                                showPauseDuringSeek = false
                             }
+                        } else {
+                            showPauseDuringSeek = false
                         }
                     }
                 })
@@ -90,7 +97,7 @@ struct NowPlayingView: View {
             }
             .padding(.horizontal)
 			
-			HStack(spacing: 40) {
+            HStack(spacing: 40) {
                 // Stop Button
 				Button(action: { 
                     musicPlayer.stop()
@@ -109,7 +116,7 @@ struct NowPlayingView: View {
 						}
 					}
                 }) {
-					Image(systemName: musicPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+					Image(systemName: (isDragging && showPauseDuringSeek) || musicPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
 						.font(.system(size: 64))
 				}
 			}

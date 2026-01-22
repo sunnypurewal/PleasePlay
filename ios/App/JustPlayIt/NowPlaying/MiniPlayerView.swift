@@ -8,6 +8,7 @@ struct MiniPlayerView: View {
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
     @State private var wasPlayingBeforeSeek = false
+    @State private var showPauseDuringSeek = false
     
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(max(0, time)) / 60
@@ -52,7 +53,7 @@ struct MiniPlayerView: View {
                         }
                     }
                 }) {
-                    Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    Image(systemName: (isDragging && showPauseDuringSeek) || musicPlayer.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
                 }
                 .padding(.trailing)
@@ -68,16 +69,22 @@ struct MiniPlayerView: View {
                 isDragging = editing
                 if editing {
                     wasPlayingBeforeSeek = musicPlayer.isPlaying
+                    showPauseDuringSeek = musicPlayer.isPlaying
                     if musicPlayer.isPlaying {
                         musicPlayer.pause()
                     }
                     dragValue = musicPlayer.currentPlaybackTime
                 } else {
+                    let shouldResume = wasPlayingBeforeSeek
+                    wasPlayingBeforeSeek = false
                     musicPlayer.seek(to: dragValue)
-                    if wasPlayingBeforeSeek {
+                    if shouldResume {
                         Task {
                             try? await musicPlayer.unpause()
+                            showPauseDuringSeek = false
                         }
+                    } else {
+                        showPauseDuringSeek = false
                     }
                 }
             })
