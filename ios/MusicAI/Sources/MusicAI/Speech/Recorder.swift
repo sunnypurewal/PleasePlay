@@ -50,6 +50,9 @@ public class Recorder {
 		audioEngine.stop()
 		isRecording = false
 		try await transcriber.finishTranscribing()
+#if os(iOS)
+        deactivateAudioSession()
+#endif
 		
 		Task {
 			// self.story.title.wrappedValue = try await story.wrappedValue.suggestedTitle() ?? story.title.wrappedValue
@@ -60,9 +63,15 @@ public class Recorder {
 	public func pauseRecording() {
 		audioEngine.pause()
         isRecording = false
+#if os(iOS)
+        deactivateAudioSession()
+#endif
 	}
 	
 	public func resumeRecording() throws {
+#if os(iOS)
+        try setUpAudioSession()
+#endif
 		try audioEngine.start()
         isRecording = true
 	}
@@ -80,6 +89,11 @@ public class Recorder {
 		try audioSession.setCategory(.playAndRecord, mode: .spokenAudio)
 		try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 	}
+
+    func deactivateAudioSession() {
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+    }
 #endif
 	
 	private func audioStream() async throws -> AsyncStream<AudioData> {
