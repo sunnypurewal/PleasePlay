@@ -222,8 +222,8 @@ private struct HistoryRow: View {
     private var likeColumn: some View {
         VStack(spacing: -2) {
             Image(systemName: song.likeCount > 0 ? "heart.fill" : "heart")
-                .font(.system(size: 36))
-                .frame(width: 58, height: 58)
+                .font(.system(size: 32))
+                .frame(width: 52, height: 52)
                 .foregroundStyle(song.likeCount > 0 ? .pink : .primary)
                 .scaleEffect(heartPulse ? 1.3 : 1)
                 .animation(.spring(response: 0.35, dampingFraction: 0.55), value: heartPulse)

@@ -5,6 +5,7 @@ import Combine
 @MainActor
 final class RecognitionListeningState: ObservableObject {
     @Published var isMusicRecognitionActive = false
+    @Published private(set) var shouldAutomaticallyListenForCommands = true
     var cancelRecognition: (() async -> Void)?
     var shouldResumePlaybackAfterRecognition = true
 
@@ -22,5 +23,13 @@ final class RecognitionListeningState: ObservableObject {
 
     func clearCancelRecognitionHandler() {
         cancelRecognition = nil
+    }
+
+    func disableAutomaticCommandListening() {
+        shouldAutomaticallyListenForCommands = false
+    }
+
+    func enableAutomaticCommandListening() {
+        shouldAutomaticallyListenForCommands = true
     }
 }

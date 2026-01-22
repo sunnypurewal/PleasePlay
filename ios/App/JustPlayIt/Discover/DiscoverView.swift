@@ -150,6 +150,7 @@ struct DiscoverView: View {
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     recognitionResult = result
+                    recognitionState.disableAutomaticCommandListening()
                 }
                 await addToHistory(from: result)
             } catch is CancellationError {

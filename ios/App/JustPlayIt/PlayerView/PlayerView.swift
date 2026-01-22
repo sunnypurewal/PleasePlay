@@ -164,10 +164,10 @@ struct PlayerView: View {
 				}
 			}
 		}
-		.onChange(of: musicPlayer.isPlaying) { _, isPlaying in
+        .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
 			if isPlaying {
 				recorder.pauseRecording()
-			} else if isAutomaticListeningEnabled && !recognitionState.isMusicRecognitionActive {
+			} else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
                 Task { try? await recorder.record() }
 			}
 		}
@@ -175,7 +175,7 @@ struct PlayerView: View {
             Task {
                 if isActive {
                     recorder.pauseRecording()
-                } else if isAutomaticListeningEnabled && !musicPlayer.isPlaying && microphonePermissionGranted {
+                } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !musicPlayer.isPlaying && microphonePermissionGranted {
                     try? await recorder.record()
                 }
             }
@@ -212,7 +212,7 @@ struct PlayerView: View {
 		}
 		
 		microphonePermissionGranted = isGranted
-		if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && !recognitionState.isMusicRecognitionActive {
+		if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
 			Task { 
                 try await recorder.record()
             }
@@ -224,7 +224,7 @@ struct PlayerView: View {
 			AVAudioApplication.requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
-					if granted && self.isAutomaticListeningEnabled && !recognitionState.isMusicRecognitionActive {
+					if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
 						Task { 
                             try? await self.recorder.record() 
                         }
@@ -235,7 +235,7 @@ struct PlayerView: View {
 			AVAudioSession.sharedInstance().requestRecordPermission { granted in
 				DispatchQueue.main.async {
 					self.microphonePermissionGranted = granted
-					if granted && self.isAutomaticListeningEnabled && !recognitionState.isMusicRecognitionActive {
+					if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
 						Task { 
                             try? await self.recorder.record() 
                         }

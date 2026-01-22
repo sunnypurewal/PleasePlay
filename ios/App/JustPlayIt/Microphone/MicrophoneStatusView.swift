@@ -92,11 +92,15 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
                     return
                 }
                 if isEnabled {
+                    recognitionState.enableAutomaticCommandListening()
                     if !recorder.isRecording {
                         try? await recorder.record()
                     }
-                } else if recorder.isRecording {
-                    try? await recorder.stopRecording()
+                } else {
+                    recognitionState.disableAutomaticCommandListening()
+                    if recorder.isRecording {
+                        try? await recorder.stopRecording()
+                    }
                 }
             }
         }
