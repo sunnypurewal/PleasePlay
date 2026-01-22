@@ -5,6 +5,7 @@ struct HistoryView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @Environment(\.modelContext) private var modelContext
     let songs: [PlayedTrack]
+    @State private var sortCriterion: SortCriterion = .addedAt
 
     private var uniqueSongCount: Int {
         Set(songs.map(\.id)).count
@@ -28,7 +29,7 @@ struct HistoryView: View {
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     summaryView
-                    List(songs) { song in
+                    List(sortedSongs) { song in
                         HistoryRow(song: song)
                     }
                     .listStyle(.plain)
@@ -45,30 +46,77 @@ struct HistoryView: View {
     }
 
     private var summaryView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Songs")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("\(uniqueSongCount)")
-                    .font(.title2)
-                    .bold()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Unique Songs")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("\(uniqueSongCount)")
+                        .font(.title2)
+                        .bold()
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Total Plays")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("\(totalSongPlays)")
+                        .font(.title2)
+                        .bold()
+                }
             }
 
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("Plays")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("\(totalSongPlays)")
-                    .font(.title2)
-                    .bold()
+            Picker("Sort by", selection: $sortCriterion) {
+                ForEach(SortCriterion.allCases, id: \.self) { criterion in
+                    Text(criterion.label)
+                        .tag(criterion)
+                }
             }
+            .pickerStyle(.segmented)
         }
         .padding(.horizontal)
         .padding(.top)
         .padding(.bottom, 4)
+    }
+
+    private var sortedSongs: [PlayedTrack] {
+        switch sortCriterion {
+        case .addedAt:
+            return songs.sorted { ($0.addedAt ?? .distantPast) > ($1.addedAt ?? .distantPast) }
+        case .playCount:
+            return songs.sorted {
+                if $0.playCount == $1.playCount {
+                    let firstPlayed = $0.lastPlayedAt ?? .distantFuture
+                    let secondPlayed = $1.lastPlayedAt ?? .distantFuture
+                    return firstPlayed < secondPlayed
+                }
+                return $0.playCount > $1.playCount
+            }
+        case .likeCount:
+            return songs.sorted { $0.likeCount > $1.likeCount }
+        }
+    }
+}
+
+private extension HistoryView {
+    enum SortCriterion: String, CaseIterable {
+        case addedAt
+        case playCount
+        case likeCount
+
+        var label: String {
+            switch self {
+            case .addedAt:
+                return "Recently Added"
+            case .playCount:
+                return "Most Plays"
+            case .likeCount:
+                return "Most Likes"
+            }
+        }
     }
 }
 
