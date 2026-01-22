@@ -120,7 +120,7 @@ struct DiscoverView: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(24)
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
             guard isPlaying else { return }

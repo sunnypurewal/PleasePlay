@@ -5,6 +5,14 @@ struct HistoryView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @Environment(\.modelContext) private var modelContext
     let songs: [PlayedTrack]
+
+    private var uniqueSongCount: Int {
+        Set(songs.map(\.id)).count
+    }
+
+    private var totalSongPlays: Int {
+        songs.reduce(0) { $0 + $1.playCount }
+    }
     
     private let miniPlayerInsetHeight: CGFloat = 120
 
@@ -18,18 +26,48 @@ struct HistoryView: View {
                 }
                 .frame(height: 150)
             } else {
-                List(songs) { song in
-                    HistoryRow(song: song)
-                }
-                .listStyle(.plain)
-                .safeAreaInset(edge: .bottom) {
-                    if musicPlayer.currentTrack != nil {
-                        Color.clear
-                            .frame(height: miniPlayerInsetHeight)
+                VStack(alignment: .leading, spacing: 0) {
+                    summaryView
+                    List(songs) { song in
+                        HistoryRow(song: song)
+                    }
+                    .listStyle(.plain)
+                    .safeAreaInset(edge: .bottom) {
+                        if musicPlayer.currentTrack != nil {
+                            Color.clear
+                                .frame(height: miniPlayerInsetHeight)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private var summaryView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Songs")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(uniqueSongCount)")
+                    .font(.title2)
+                    .bold()
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("Plays")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(totalSongPlays)")
+                    .font(.title2)
+                    .bold()
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top)
+        .padding(.bottom, 4)
     }
 }
 
