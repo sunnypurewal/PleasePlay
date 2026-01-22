@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import MusicStreaming
 
 struct HistoryView: View {
@@ -122,6 +123,7 @@ private extension HistoryView {
 
 private struct HistoryRow: View {
     @Environment(MusicPlayer.self) private var musicPlayer
+    @Environment(\.modelContext) private var modelContext
     let song: PlayedTrack
     @State private var heartPulse = false
     @State private var isRowPressed = false
@@ -192,6 +194,13 @@ private struct HistoryRow: View {
                 isRowPressed = false
             }
             playSong()
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                deleteSong()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -268,6 +277,15 @@ private struct HistoryRow: View {
                 song.playHistory.append(Date())
                 song.lastPlayedAt = Date()
             }
+        }
+    }
+
+    private func deleteSong() {
+        modelContext.delete(song)
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to delete track: \(error)")
         }
     }
 }
