@@ -45,6 +45,13 @@ private struct HistoryRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            if isCurrentSong {
+                Image(systemName: "speaker.wave.3.fill")
+                    .foregroundStyle(Color.accentColor)
+                    .font(.caption)
+                    .frame(width: 16)
+            }
+
             artworkView
 
             VStack(alignment: .leading, spacing: 4) {
@@ -59,11 +66,6 @@ private struct HistoryRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                if isCurrentSong {
-                    Image(systemName: "speaker.wave.3.fill")
-                        .foregroundStyle(Color.accentColor)
-                        .font(.caption2)
-                }
                 if song.recognizedByShazam {
                     HStack(spacing: 4) {
                         Image(systemName: "sparkles")
