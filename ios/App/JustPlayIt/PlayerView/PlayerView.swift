@@ -166,15 +166,15 @@ struct PlayerView: View {
 			if isPlaying {
 				recorder.pauseRecording()
 			} else if isAutomaticListeningEnabled && !recognitionState.isMusicRecognitionActive {
-				try? recorder.resumeRecording()
+                Task { try? await recorder.record() }
 			}
 		}
-		.onChange(of: recognitionState.isMusicRecognitionActive) { _, isActive in
+        .onChange(of: recognitionState.isMusicRecognitionActive) { _, isActive in
             Task {
                 if isActive {
                     recorder.pauseRecording()
                 } else if isAutomaticListeningEnabled && !musicPlayer.isPlaying && microphonePermissionGranted {
-                    try? recorder.resumeRecording()
+                    try? await recorder.record()
                 }
             }
         }

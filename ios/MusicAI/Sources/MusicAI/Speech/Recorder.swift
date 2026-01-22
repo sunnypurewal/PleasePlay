@@ -27,7 +27,7 @@ public class Recorder {
 			.appendingPathExtension(for: .wav)
 	}
 	
-	public func record() async throws {
+	private func setup() async throws {
 		guard await isAuthorized() else {
 			print("user denied mic permission")
 			return
@@ -63,8 +63,11 @@ public class Recorder {
 #endif
 	}
 	
-	public func resumeRecording() throws {
+	public func record() async throws {
 		guard !isRecording else { return }
+        if outputContinuation == nil {
+            try await setup()
+        }
 #if os(iOS)
         try setUpAudioSession()
 #endif
@@ -72,11 +75,11 @@ public class Recorder {
         isRecording = true
 	}
 
-    public func toggleRecording() {
+    public func toggleRecording() async throws {
         if isRecording {
             pauseRecording()
         } else {
-            try? resumeRecording()
+            try await record()
         }
     }
 #if os(iOS)
