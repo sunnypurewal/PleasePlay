@@ -65,6 +65,7 @@ struct NowPlayingView: View {
                 ), in: 0...currentSong.duration, onEditingChanged: { editing in
                     isDragging = editing
                     if editing {
+                        musicPlayer.isSeeking = true
                         wasPlayingBeforeSeek = musicPlayer.isPlaying
                         showPauseDuringSeek = musicPlayer.isPlaying
                         if musicPlayer.isPlaying {
@@ -83,6 +84,7 @@ struct NowPlayingView: View {
                         } else {
                             showPauseDuringSeek = false
                         }
+                        musicPlayer.isSeeking = false
                     }
                 })
                 .accentColor(.primary)

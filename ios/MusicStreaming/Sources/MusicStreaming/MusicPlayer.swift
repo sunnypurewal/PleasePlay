@@ -66,11 +66,12 @@ public protocol StreamingMusicProvider {
 
 @Observable
 @MainActor
-public class MusicPlayer {
-	public var provider: StreamingMusicProvider?
-	public var isUserPaused: Bool = false
-	public var prePlayHook: (() async -> Void)?
-	
+	public class MusicPlayer {
+		public var provider: StreamingMusicProvider?
+		public var isUserPaused: Bool = false
+		public var prePlayHook: (() async -> Void)?
+		public var isSeeking: Bool = false
+
 	public init() {
 		self.provider = nil
 	}
