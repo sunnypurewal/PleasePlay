@@ -112,7 +112,7 @@ private struct HistoryRow: View {
 
     private var likeColumn: some View {
         VStack(spacing: 0) {
-            Image(systemName: "heart.fill")
+            Image(systemName: song.likeCount > 0 ? "heart.fill" : "heart")
                 .font(.system(size: 36))
                 .frame(width: 58, height: 58)
                 .foregroundStyle(song.likeCount > 0 ? .pink : .primary)
