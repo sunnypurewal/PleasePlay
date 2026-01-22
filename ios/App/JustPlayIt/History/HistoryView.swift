@@ -31,6 +31,13 @@ private struct HistoryRow: View {
     @State private var heartPulse = false
     @State private var isRowPressed = false
     @State private var skipNextRowTap = false
+    
+    private static let recognitionRelativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        formatter.dateTimeStyle = .named
+        return formatter
+    }()
 
     private var isCurrentSong: Bool {
 		(musicPlayer.isPlaying || musicPlayer.isSeeking) && (musicPlayer.currentTrack?.serviceIDs.contains(song) ?? false)
@@ -51,24 +58,29 @@ private struct HistoryRow: View {
 
             Spacer()
 
-            HStack(alignment: .center, spacing: 16) {
-                likeColumn
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    if isCurrentSong {
-                        Image(systemName: "speaker.wave.3.fill")
-							.foregroundStyle(Color.accentColor)
-                            .font(.caption2)
-                    }
-                    if song.recognizedByShazam {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.tertiary)
-                    }
-                    Text("\(song.playCount) plays")
+            VStack(alignment: .trailing, spacing: 2) {
+                if isCurrentSong {
+                    Image(systemName: "speaker.wave.3.fill")
+                        .foregroundStyle(Color.accentColor)
                         .font(.caption2)
-                        .foregroundStyle(.tertiary)
                 }
+                if song.recognizedByShazam {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                        if let recognizedAt = song.recognizedAt {
+                            Text(Self.recognitionRelativeFormatter.localizedString(for: recognizedAt, relativeTo: Date()))
+                                .lineLimit(1)
+                        }
+                    }
+                    .foregroundStyle(.tertiary)
+                    .font(.caption2)
+                }
+                Text("\(song.playCount) plays")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
+
+            likeColumn
         }
         .contentShape(Rectangle())
         .scaleEffect(isRowPressed ? 0.98 : 1)
@@ -111,7 +123,7 @@ private struct HistoryRow: View {
     }
 
     private var likeColumn: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: -2) {
             Image(systemName: song.likeCount > 0 ? "heart.fill" : "heart")
                 .font(.system(size: 36))
                 .frame(width: 58, height: 58)
@@ -133,6 +145,7 @@ private struct HistoryRow: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .frame(height: 14)
+                .offset(y: -1)
                 .opacity(song.likeCount > 0 ? 1 : 0)
         }
     }
