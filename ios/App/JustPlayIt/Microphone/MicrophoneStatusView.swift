@@ -83,16 +83,6 @@ struct MicrophoneStatusView<R: AudioRecording>: View {
                     .fixedSize()
                     .disabled(recognitionState.isMusicRecognitionActive)
             }
-            HStack {
-                Spacer()
-                Text(isAutomaticListeningEnabled
-                        ? "App will listen for commands\nwhen the music stops"
-                        : "App will not listen for commands\nwhen the music stops")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(2)
-            }
         }
         .padding(.horizontal)
         .padding(.top, 8)

@@ -15,172 +15,186 @@ import MusicAI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \PlayedTrack.addedAt, order: .reverse) private var playedTracks: [PlayedTrack]
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
-	@State private var microphonePermissionGranted = false
+    @State private var microphonePermissionGranted = false
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
-	@State var recorder: Recorder
-	@State var speechTranscriber: SpokenWordTranscriber
-	@State var predictor: Predictor
+    @State var recorder: Recorder
+    @State var speechTranscriber: SpokenWordTranscriber
+    @State var predictor: Predictor
     @State private var searchResults: [Track] = []
     @State private var isSearching = false
-	@State private var hasAppeared = false
+    @State private var hasAppeared = false
+    @State private var voiceCommandSuggestion = "Blackbird by The Beatles"
 
-	init() {
-		let transcriber = SpokenWordTranscriber()
-		recorder = Recorder(transcriber: transcriber)
-		speechTranscriber = transcriber
-		predictor = Predictor()
-	}
-	
-	var body: some View {
-		VStack {
-			// Microphone Permission Banner
-			if !microphonePermissionGranted {
-				MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
-			}
-			
-            if !musicPlayer.isPlaying && !musicPlayer.isSeeking {
-                MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
+    init() {
+        let transcriber = SpokenWordTranscriber()
+        recorder = Recorder(transcriber: transcriber)
+        speechTranscriber = transcriber
+        predictor = Predictor()
+    }
+    
+    var body: some View {
+        VStack {
+            // Microphone Permission Banner
+            if !microphonePermissionGranted {
+                MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
             }
-			
-			Spacer()
-			
-			// Content for Empty State vs Now Playing
-			if isSearching {
-				ProgressView("Searching...")
-				Spacer()
-			} else if !searchResults.isEmpty {
-				VStack(alignment: .leading) {
-					Text("Search Results")
-						.font(.headline)
+            
+			if !musicPlayer.isPlaying && !musicPlayer.isSeeking {
+                MicrophoneStatusView(recorder: recorder, isAutomaticListeningEnabled: $isAutomaticListeningEnabled)
+				if recorder.isRecording {
+					Text("Ask me to play a song or artist.")
+					Text("\"**Please play** \(voiceCommandSuggestion)\"")
+						.font(.title3)
+						.foregroundColor(.secondary)
+						.multilineTextAlignment(.center)
 						.padding(.horizontal)
-					
-					List(searchResults, id: \.serviceIDs) { track in
-						Button(action: {
-							Task {
-								await cancelRecognitionBeforePlayback()
-								try? await musicPlayer.play(id: track.serviceIDs)
-								await MainActor.run {
-									saveTrack(track)
-								}
-							}
-						}) {
-							HStack {
-								if let url = track.artworkURL {
-									AsyncImage(url: url) { image in
-										image.resizable()
-									} placeholder: {
-										Color.gray
-									}
-									.frame(width: 50, height: 50)
-									.cornerRadius(4)
-								} else {
-									Image(systemName: "music.note")
-										.frame(width: 50, height: 50)
-										.background(Color.secondary.opacity(0.1))
-										.cornerRadius(4)
-								}
-								
-								VStack(alignment: .leading) {
-									Text(track.title)
-										.font(.headline)
-									Text(track.artist)
-										.font(.subheadline)
-									.foregroundColor(.secondary)
-								}
-								
-								Spacer()
-								
-								if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
-									Image(systemName: "speaker.wave.3.fill")
-										.foregroundColor(.accentColor)
-										.font(.caption)
-								}
-							}
-						}
-					}
-					.listStyle(.plain)
 				}
-			}
-		}
-		.onAppear {
-			checkMicrophonePermission(shouldStartListening: !hasAppeared)
-			hasAppeared = true
-		}
-		.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
-			let transcript = String(new.characters)
-			guard !transcript.isEmpty else { return }
-			print(transcript)
-			guard let triggerRange = transcript.range(of: "please play", options: .caseInsensitive) else {
-				speechTranscriber.resetTranscripts()
-				return
-			}
-			let text = String(transcript[triggerRange.lowerBound...])
-			Task {
-				do {
-					let output = try await predictor.predictEntities(from: text)
+				Spacer()
+            }
+            
+            Spacer()
+            
+            // Content for Empty State vs Now Playing
+            if isSearching {
+                ProgressView("Searching...")
+                Spacer()
+            } else if !searchResults.isEmpty {
+                VStack(alignment: .leading) {
+                    Text("Search Results")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    List(searchResults, id: \.serviceIDs) { track in
+                        Button(action: {
+                            Task {
+                                await cancelRecognitionBeforePlayback()
+                                try? await musicPlayer.play(id: track.serviceIDs)
+                                await MainActor.run {
+                                    saveTrack(track)
+                                }
+                            }
+                        }) {
+                            HStack {
+                                if let url = track.artworkURL {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable()
+                                    } placeholder: {
+                                        Color.gray
+                                    }
+                                    .frame(width: 50, height: 50)
+                                    .cornerRadius(4)
+                                } else {
+                                    Image(systemName: "music.note")
+                                        .frame(width: 50, height: 50)
+                                        .background(Color.secondary.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
+                                
+                                VStack(alignment: .leading) {
+                                    Text(track.title)
+                                        .font(.headline)
+                                    Text(track.artist)
+                                        .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
+                                    Image(systemName: "speaker.wave.3.fill")
+                                        .foregroundColor(.accentColor)
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                }
+            }
+        }
+        .onAppear {
+            checkMicrophonePermission(shouldStartListening: !hasAppeared)
+            hasAppeared = true
+            refreshVoiceCommandSuggestion()
+        }
+        .onChange(of: playedTracks) { _, _ in
+            refreshVoiceCommandSuggestion()
+        }
+        .onChange(of: speechTranscriber.finalizedTranscript) { old, new in
+            let transcript = String(new.characters)
+            guard !transcript.isEmpty else { return }
+            guard let triggerRange = transcript.range(of: "please play", options: .caseInsensitive) else {
+                speechTranscriber.resetTranscripts()
+                return
+            }
+            let text = String(transcript[triggerRange.lowerBound...])
+            Task {
+                do {
+                    let output = try await predictor.predictEntities(from: text)
 
-					speechTranscriber.resetTranscripts()
-					print(output)
+                    speechTranscriber.resetTranscripts()
+                    print(output)
 
-					let artists = output["Artists"] as? [String] ?? []
-					let woas = output["WoAs"] as? [String] ?? []
+                    let artists = output["Artists"] as? [String] ?? []
+                    let woas = output["WoAs"] as? [String] ?? []
 
-					let artist = artists.first ?? ""
-					let title = woas.first ?? ""
+                    let artist = artists.first ?? ""
+                    let title = woas.first ?? ""
 
-					let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
-					let searchQuery = query.isEmpty ? text : query
+                    let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
+                    let searchQuery = query.isEmpty ? text : query
 
-					if !searchQuery.isEmpty {
-						let hasEntity = !(artist.isEmpty && title.isEmpty)
-						if !hasEntity {
-							await MainActor.run {
-								self.isSearching = false
-							}
-							return
-						}
-						isSearching = true
-						// Perform search
-						async let searchTask = musicPlayer.search(query: searchQuery)
+                    if !searchQuery.isEmpty {
+                        let hasEntity = !(artist.isEmpty && title.isEmpty)
+                        if !hasEntity {
+                            await MainActor.run {
+                                self.isSearching = false
+                            }
+                            return
+                        }
+                        isSearching = true
+                        // Perform search
+                        async let searchTask = musicPlayer.search(query: searchQuery)
 
-						var playedTrack: Track?
-						if !artist.isEmpty || !title.isEmpty {
-							await cancelRecognitionBeforePlayback()
-							playedTrack = try? await musicPlayer.play(artist: artist, song: title)
-						}
+                        var playedTrack: Track?
+                        if !artist.isEmpty || !title.isEmpty {
+                            await cancelRecognitionBeforePlayback()
+                            playedTrack = try? await musicPlayer.play(artist: artist, song: title)
+                        }
 
-						let results = try? await searchTask
+                        let results = try? await searchTask
 
-						await MainActor.run {
-							if let track = playedTrack {
-								saveTrack(track)
-							}
-							let allResults = results ?? []
-							if title.isEmpty && !artist.isEmpty {
-								self.searchResults = allResults
-							} else {
-								self.searchResults = allResults.filter { track in
-									allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
-								}
-							}
-							self.isSearching = false
-						}
-					}
-				} catch {
-					print("Prediction error: \(error)")
-					isSearching = false
-				}
-			}
-		}
+                        await MainActor.run {
+                            if let track = playedTrack {
+                                saveTrack(track)
+                            }
+                            let allResults = results ?? []
+                            if title.isEmpty && !artist.isEmpty {
+                                self.searchResults = allResults
+                            } else {
+                                self.searchResults = allResults.filter { track in
+                                    allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
+                                }
+                            }
+                            self.isSearching = false
+                        }
+                    }
+                } catch {
+                    print("Prediction error: \(error)")
+                    isSearching = false
+                }
+            }
+        }
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
-			if isPlaying {
-				recorder.pauseRecording()
-			} else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+            if isPlaying {
+                recorder.pauseRecording()
+            } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
                 Task { try? await recorder.record() }
-			}
-		}
+            }
+        }
         .onChange(of: recognitionState.isMusicRecognitionActive) { _, isActive in
             Task {
                 if isActive {
@@ -190,77 +204,77 @@ struct HomeView: View {
                 }
             }
         }
-		.task {
-			do {
-				try await predictor.loadModel()
-			} catch {
-				print("Failed to load model: \(error)")
-			}
-		}
-	}
-	
-	private func checkMicrophonePermission(shouldStartListening: Bool) {
-		let isGranted: Bool
-		if #available(iOS 17.0, *) {
-			switch AVAudioApplication.shared.recordPermission {
-				case .granted:
-					isGranted = true
-				case .denied, .undetermined:
-					isGranted = false
-				@unknown default:
-					isGranted = false
-			}
-		} else {
-			switch AVAudioSession.sharedInstance().recordPermission {
-				case .granted:
-					isGranted = true
-				case .denied, .undetermined:
-					isGranted = false
-				@unknown default:
-					isGranted = false
-			}
-		}
-		
-		microphonePermissionGranted = isGranted
-		if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-			Task { 
+        .task {
+            do {
+                try await predictor.loadModel()
+            } catch {
+                print("Failed to load model: \(error)")
+            }
+        }
+    }
+    
+    private func checkMicrophonePermission(shouldStartListening: Bool) {
+        let isGranted: Bool
+        if #available(iOS 17.0, *) {
+            switch AVAudioApplication.shared.recordPermission {
+                case .granted:
+                    isGranted = true
+                case .denied, .undetermined:
+                    isGranted = false
+                @unknown default:
+                    isGranted = false
+            }
+        } else {
+            switch AVAudioSession.sharedInstance().recordPermission {
+                case .granted:
+                    isGranted = true
+                case .denied, .undetermined:
+                    isGranted = false
+                @unknown default:
+                    isGranted = false
+            }
+        }
+        
+        microphonePermissionGranted = isGranted
+        if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+            Task { 
                 try await recorder.record()
             }
-		}
-	}
-	
-	private func requestMicrophoneAccess() {
-		if #available(iOS 17.0, *) {
-			AVAudioApplication.requestRecordPermission { granted in
-				DispatchQueue.main.async {
-					self.microphonePermissionGranted = granted
-					if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-						Task { 
-                            try? await self.recorder.record() 
-                        }
-					}
-				}
-			}
-		} else {
-			AVAudioSession.sharedInstance().requestRecordPermission { granted in
-				DispatchQueue.main.async {
-					self.microphonePermissionGranted = granted
-					if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-						Task { 
-                            try? await self.recorder.record() 
-                        }
-					}
-				}
-			}
-		}
-	}
-
-	private func cancelRecognitionBeforePlayback() async {
-		guard recognitionState.isMusicRecognitionActive else { return }
-		await recognitionState.requestCancelRecognition(skipResume: true)
-	}
+        }
+    }
     
-	private func saveTrack(_ track: Track) {
+    private func requestMicrophoneAccess() {
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { granted in
+                DispatchQueue.main.async {
+                    self.microphonePermissionGranted = granted
+                    if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+                        Task { 
+                            try? await self.recorder.record() 
+                        }
+                    }
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                DispatchQueue.main.async {
+                    self.microphonePermissionGranted = granted
+                    if granted && self.isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+                        Task { 
+                            try? await self.recorder.record() 
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func cancelRecognitionBeforePlayback() async {
+        guard recognitionState.isMusicRecognitionActive else { return }
+        await recognitionState.requestCancelRecognition(skipResume: true)
+    }
+    
+    private func saveTrack(_ track: Track) {
         let title = track.title
         let artist = track.artist
         
@@ -292,10 +306,24 @@ struct HomeView: View {
             print("Failed to save track: \(error)")
         }
     }
+
+    private func refreshVoiceCommandSuggestion() {
+        let suggestion: String
+        if let track = playedTracks.randomElement() {
+            let options = [
+                "\(track.title) by \(track.artist)",
+                track.artist
+            ].filter { !$0.isEmpty }
+            suggestion = options.randomElement() ?? "Blackbird by The Beatles"
+        } else {
+            suggestion = "Blackbird by The Beatles"
+        }
+        voiceCommandSuggestion = suggestion
+    }
 }
 
 #Preview {
-	HomeView()
+    HomeView()
         .environment(MusicPlayer())
         .environmentObject(RecognitionListeningState())
 }
