@@ -109,63 +109,68 @@ struct HomeView: View {
 			hasAppeared = true
 		}
 		.onChange(of: speechTranscriber.finalizedTranscript) { old, new in
-			let text = String(new.characters)
-			if !text.isEmpty {
-				Task {
-					do {
-						let output = try await predictor.predictEntities(from: text)
-						
-						speechTranscriber.resetTranscripts()
-						print(output)
-						
-						let artists = output["Artists"] as? [String] ?? []
-						let woas = output["WoAs"] as? [String] ?? []
-						
-						let artist = artists.first ?? ""
-						let title = woas.first ?? ""
-						
-						let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
-						let searchQuery = query.isEmpty ? text : query
-						
-						if !searchQuery.isEmpty {
-							let hasEntity = !(artist.isEmpty && title.isEmpty)
-							if !hasEntity {
-								await MainActor.run {
-									self.isSearching = false
-								}
-								return
-							}
-							isSearching = true
-							// Perform search
-							async let searchTask = musicPlayer.search(query: searchQuery)
-							
-							var playedTrack: Track?
-							if !artist.isEmpty || !title.isEmpty {
-								await cancelRecognitionBeforePlayback()
-								playedTrack = try? await musicPlayer.play(artist: artist, song: title)
-							}
-							
-							let results = try? await searchTask
-							
+			let transcript = String(new.characters)
+			guard !transcript.isEmpty else { return }
+			print(transcript)
+			guard let triggerRange = transcript.range(of: "please play", options: .caseInsensitive) else {
+				speechTranscriber.resetTranscripts()
+				return
+			}
+			let text = String(transcript[triggerRange.lowerBound...])
+			Task {
+				do {
+					let output = try await predictor.predictEntities(from: text)
+
+					speechTranscriber.resetTranscripts()
+					print(output)
+
+					let artists = output["Artists"] as? [String] ?? []
+					let woas = output["WoAs"] as? [String] ?? []
+
+					let artist = artists.first ?? ""
+					let title = woas.first ?? ""
+
+					let query = [artist, title].filter { !$0.isEmpty }.joined(separator: " ")
+					let searchQuery = query.isEmpty ? text : query
+
+					if !searchQuery.isEmpty {
+						let hasEntity = !(artist.isEmpty && title.isEmpty)
+						if !hasEntity {
 							await MainActor.run {
-								if let track = playedTrack {
-									saveTrack(track)
-								}
-								let allResults = results ?? []
-								if title.isEmpty && !artist.isEmpty {
-									self.searchResults = allResults
-								} else {
-									self.searchResults = allResults.filter { track in
-										allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
-									}
-								}
 								self.isSearching = false
 							}
+							return
 						}
-					} catch {
-						print("Prediction error: \(error)")
-						isSearching = false
+						isSearching = true
+						// Perform search
+						async let searchTask = musicPlayer.search(query: searchQuery)
+
+						var playedTrack: Track?
+						if !artist.isEmpty || !title.isEmpty {
+							await cancelRecognitionBeforePlayback()
+							playedTrack = try? await musicPlayer.play(artist: artist, song: title)
+						}
+
+						let results = try? await searchTask
+
+						await MainActor.run {
+							if let track = playedTrack {
+								saveTrack(track)
+							}
+							let allResults = results ?? []
+							if title.isEmpty && !artist.isEmpty {
+								self.searchResults = allResults
+							} else {
+								self.searchResults = allResults.filter { track in
+									allResults.contains { $0.title.lowercased() == track.title.lowercased() && $0.artist.lowercased() != track.artist.lowercased() }
+								}
+							}
+							self.isSearching = false
+						}
 					}
+				} catch {
+					print("Prediction error: \(error)")
+					isSearching = false
 				}
 			}
 		}
