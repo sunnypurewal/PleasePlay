@@ -128,6 +128,13 @@ struct HomeView: View {
 						let searchQuery = query.isEmpty ? text : query
 						
 						if !searchQuery.isEmpty {
+							let hasEntity = !(artist.isEmpty && title.isEmpty)
+							if !hasEntity {
+								await MainActor.run {
+									self.isSearching = false
+								}
+								return
+							}
 							isSearching = true
 							// Perform search
 							async let searchTask = musicPlayer.search(query: searchQuery)
