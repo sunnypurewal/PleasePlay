@@ -5,6 +5,8 @@ struct HistoryView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @Environment(\.modelContext) private var modelContext
     let songs: [PlayedTrack]
+    
+    private let miniPlayerInsetHeight: CGFloat = 120
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -20,6 +22,12 @@ struct HistoryView: View {
                     HistoryRow(song: song)
                 }
                 .listStyle(.plain)
+                .safeAreaInset(edge: .bottom) {
+                    if musicPlayer.currentTrack != nil {
+                        Color.clear
+                            .frame(height: miniPlayerInsetHeight)
+                    }
+                }
             }
         }
     }
