@@ -144,14 +144,14 @@ struct DiscoverView: View {
         recognitionResult = nil
         errorMessage = nil
         singleRecognitionTask?.cancel()
-        singleRecognitionTask = Task {
+        singleRecognitionTask = Task.detached {
             do {
                 let result = try await recognizer.recognizeSingleSong()
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
                     recognitionResult = result
                 }
-                addToHistory(from: result)
+                await addToHistory(from: result)
             } catch is CancellationError {
                 await MainActor.run {
                     errorMessage = nil
@@ -274,6 +274,7 @@ struct DiscoverView: View {
         }
     }
 
+    @MainActor
     private func resumePlaybackIfNeeded() async {
         defer {
             recognitionState.shouldResumePlaybackAfterRecognition = true
