@@ -119,7 +119,7 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
         }
 
         try audioSession.setCategory(.record, mode: .measurement, options: [.mixWithOthers])
-        try audioSession.setActive(true)
+        try audioSession.setActive(true, options: [.notifyOthersOnDeactivation])
     }
 
     private func startAudioEngine() throws {

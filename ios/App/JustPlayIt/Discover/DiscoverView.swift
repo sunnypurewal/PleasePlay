@@ -1,10 +1,12 @@
 import MusicRecognition
 import SwiftData
 import SwiftUI
+import MusicStreaming
 
 struct DiscoverView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var recognitionState: RecognitionListeningState
+	@Environment(MusicPlayer.self) var musicPlayer
     @State private var recognizer = ShazamMusicRecognizer()
     @State private var isRecognizing = false
     @State private var singleRecognitionTask: Task<Void, Never>?
@@ -13,6 +15,7 @@ struct DiscoverView: View {
     @State private var continuousStopTask: Task<Void, Never>?
     @State private var recognitionResult: MusicRecognitionResult?
     @State private var errorMessage: String?
+    @State private var wasPlayingBeforeRecognition = false
     private let activeListeningColor = Color.red
 
     var body: some View {
@@ -122,6 +125,7 @@ struct DiscoverView: View {
     }
 
     private func recognizeSong() async {
+        wasPlayingBeforeRecognition = musicPlayer.isPlaying
         await MainActor.run {
             recognitionState.isMusicRecognitionActive = true
         }
@@ -151,6 +155,7 @@ struct DiscoverView: View {
                 recognitionState.isMusicRecognitionActive = false
                 singleRecognitionTask = nil
             }
+            await resumePlaybackIfNeeded()
         }
     }
 
@@ -163,9 +168,11 @@ struct DiscoverView: View {
             isRecognizing = false
             recognitionState.isMusicRecognitionActive = false
         }
+        await resumePlaybackIfNeeded()
     }
 
     private func toggleContinuousRecognition() async {
+        wasPlayingBeforeRecognition = musicPlayer.isPlaying
         if isContinuousRecognizing {
             continuousStopTask?.cancel()
             continuousStopTask = nil
@@ -175,6 +182,7 @@ struct DiscoverView: View {
             await MainActor.run {
                 recognitionState.isMusicRecognitionActive = false
             }
+            await resumePlaybackIfNeeded()
             return
         }
 
@@ -197,11 +205,13 @@ struct DiscoverView: View {
             await MainActor.run {
                 recognitionState.isMusicRecognitionActive = false
             }
+            await resumePlaybackIfNeeded()
         }
     }
 
     private func startTimedRecognition(duration: TimeInterval) async {
         guard !isContinuousRecognizing else { return }
+        wasPlayingBeforeRecognition = musicPlayer.isPlaying
         isTimedRecognizing = true
         isContinuousRecognizing = true
         recognitionResult = nil
@@ -217,6 +227,7 @@ struct DiscoverView: View {
                 isTimedRecognizing = false
                 recognitionState.isMusicRecognitionActive = false
             }
+            await resumePlaybackIfNeeded()
         }
         do {
             try await recognizer.startContinuousRecognition(for: duration) { result in
@@ -234,7 +245,14 @@ struct DiscoverView: View {
             }
             continuousStopTask?.cancel()
             continuousStopTask = nil
+            await resumePlaybackIfNeeded()
         }
+    }
+
+    private func resumePlaybackIfNeeded() async {
+        guard wasPlayingBeforeRecognition else { return }
+        wasPlayingBeforeRecognition = false
+        try? await musicPlayer.unpause()
     }
 
     @MainActor
