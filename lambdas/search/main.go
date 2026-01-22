@@ -42,7 +42,7 @@ type Track struct {
 	PreviewURL string `json:"preview_url"`
 }
 
-func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func handler(request events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	priv_key := `
 -----BEGIN PRIVATE KEY-----
 MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgPGx8PoRJDqbRh0xr
@@ -56,7 +56,7 @@ xpZ3aOrY
 
 	block, err := jwt.ParseECPrivateKeyFromPEM([]byte(priv_key))
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to parse private key: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to parse private key: " + err.Error()}, nil
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
@@ -69,14 +69,22 @@ xpZ3aOrY
 
 	tokenString, err := token.SignedString(block)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to sign token: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to sign token: " + err.Error()}, nil
 	}
 
 	search_url := "https://api.music.apple.com/v1/catalog/us/search"
 	
-	// Create the query parameters
+	// Extract the search term from the query string
+	term := request.QueryStringParameters["term"]
+	if term == "" {
+		// Fallback or handle error - for now, we'll try to use the body if term is empty
+		// but typically GET requests use query params
+		term = request.Body
+	}
+
+	// Create the query parameters for Apple Music
 	params := url.Values{}
-	params.Add("term", request.Body)
+	params.Add("term", term)
 	// Adding typical types for music search to provide useful results
 	params.Add("types", "songs")
 	params.Add("limit", "5")
@@ -86,7 +94,7 @@ xpZ3aOrY
 	// Create request
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to create request: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to create request: " + err.Error()}, nil
 	}
 
 	req.Header.Add("Authorization", "Bearer "+tokenString)
@@ -95,23 +103,23 @@ xpZ3aOrY
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to execute request: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to execute request: " + err.Error()}, nil
 	}
 	defer resp.Body.Close()
 
 	// Read response
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to read response: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to read response: " + err.Error()}, nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return events.APIGatewayProxyResponse{StatusCode: resp.StatusCode, Body: string(bodyBytes)}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: resp.StatusCode, Body: string(bodyBytes)}, nil
 	}
 
 	var amResp AppleMusicResponse
 	if err := json.Unmarshal(bodyBytes, &amResp); err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to parse Apple Music response: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to parse Apple Music response: " + err.Error()}, nil
 	}
 
 	var tracks []Track
@@ -133,10 +141,10 @@ xpZ3aOrY
 
 	respBody, err := json.Marshal(tracks)
 	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500, Body: "Failed to marshal results: " + err.Error()}, nil
+		return events.APIGatewayV2HTTPResponse{StatusCode: 500, Body: "Failed to marshal results: " + err.Error()}, nil
 	}
 
-	return events.APIGatewayProxyResponse{
+	return events.APIGatewayV2HTTPResponse{
 		StatusCode: 200,
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       string(respBody),
