@@ -102,8 +102,6 @@ struct HomeView: View {
 					}
 					.listStyle(.plain)
 				}
-			} else {
-				PlayerEmptyStateView(recorder: recorder, transcript: speechTranscriber.finalizedTranscript, isRecording: recorder.isRecording)
 			}
 		}
 		.onAppear {
