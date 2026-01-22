@@ -7,6 +7,7 @@ struct NowPlayingView: View {
     
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
+    @State private var wasPlayingBeforeSeek = false
     
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(max(0, time)) / 60
@@ -59,12 +60,22 @@ struct NowPlayingView: View {
                     get: { isDragging ? dragValue : musicPlayer.currentPlaybackTime },
                     set: { newValue in
                         dragValue = newValue
-                        musicPlayer.seek(to: newValue)
                     }
                 ), in: 0...currentSong.duration, onEditingChanged: { editing in
                     isDragging = editing
                     if editing {
+                        wasPlayingBeforeSeek = musicPlayer.isPlaying
+                        if musicPlayer.isPlaying {
+                            musicPlayer.pause()
+                        }
                         dragValue = musicPlayer.currentPlaybackTime
+                    } else {
+                        musicPlayer.seek(to: dragValue)
+                        if wasPlayingBeforeSeek {
+                            Task {
+                                try? await musicPlayer.unpause()
+                            }
+                        }
                     }
                 })
                 .accentColor(.primary)
