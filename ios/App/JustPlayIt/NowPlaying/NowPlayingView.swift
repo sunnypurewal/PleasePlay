@@ -165,7 +165,7 @@ struct NowPlayingView: View {
             AuthenticationView()
                 .environmentObject(authManager)
         }
-        .onChange(of: authManager.isAuthorized) { isAuthorized in
+        .onChange(of: authManager.isAuthorized) { _, isAuthorized in
             if isAuthorized {
                 showAuthenticationSheet = false
             }

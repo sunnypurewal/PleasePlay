@@ -6,7 +6,7 @@
 //
 
 import Foundation
-@preconcurrency import MusicKit
+@_implementationOnly @preconcurrency import MusicKit
 import Observation
 
 @MainActor

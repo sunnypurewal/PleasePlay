@@ -22,11 +22,7 @@ struct HomeView: View {
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var microphonePermissionGranted = false
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
-    @StateObject private var microphoneInputHolder = MicrophoneInputHolder()
-    private var input: MicrophoneInput { microphoneInputHolder.input }
-    @State private var speechTranscriber = SpokenWordTranscriber()
     @State private var predictor = Predictor()
-    @State private var isMicrophoneStreaming = false
     @State private var searchResults: [Track] = []
     @State private var isSearching = false
     @State private var hasAppeared = false
@@ -47,12 +43,12 @@ struct HomeView: View {
             
             if !isPlayingDebounced && !musicPlayer.isSeeking {
                 MicrophoneStatusView(
-                    isListening: isMicrophoneStreaming,
+                    isListening: recognitionState.isMicrophoneStreaming,
                     isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
                     toggleListening: { await toggleMicrophoneListening() },
                     onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
                 )
-                if isMicrophoneStreaming {
+                if recognitionState.isMicrophoneStreaming {
                     VStack(spacing: 12) {
                         Text("All commands start with \"Please play\"")
                             .font(.subheadline)
@@ -152,11 +148,11 @@ struct HomeView: View {
         .onChange(of: playedTracks) { _, _ in
             refreshVoiceCommandSuggestion()
         }
-        .onChange(of: speechTranscriber.finalizedTranscript) { old, new in
+        .onChange(of: recognitionState.speechTranscriber.finalizedTranscript) { old, new in
             let transcript = String(new.characters)
             guard !transcript.isEmpty else { return }
             guard let triggerRange = transcript.range(of: "please play", options: .caseInsensitive) else {
-                speechTranscriber.resetTranscripts()
+                recognitionState.speechTranscriber.resetTranscripts()
                 return
             }
 			let text = String(transcript[triggerRange.upperBound...])
@@ -164,7 +160,7 @@ struct HomeView: View {
                 do {
                     let output = try await predictor.predictEntities(from: text)
 
-                    speechTranscriber.resetTranscripts()
+                    recognitionState.speechTranscriber.resetTranscripts()
                     print(output)
 
                     let artists = output["Artists"] as? [String] ?? []
@@ -233,26 +229,14 @@ struct HomeView: View {
         }
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
             schedulePlaybackStateDebounce(isPlaying: isPlaying)
-            Task {
-                if isPlaying {
-                    await stopMicrophoneStreaming()
-                } else {
-                    await resumeAutomaticListeningIfAllowed(reason: "playback stopped")
-                }
-            }
         }
         .onChange(of: recognitionState.isMusicRecognitionActive) { _, isActive in
-            Task {
-                if isActive {
-                    await stopMicrophoneStreaming()
-                } else {
-                    await resumeAutomaticListeningIfAllowed(reason: "recognition ended")
-                }
-            }
+            // Handled by AutoListenCoordinator
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 Task {
+                    // This might still be useful to ensure we start if we were suspended
                     await resumeAutomaticListeningIfAllowed(reason: "app foregrounded")
                 }
             }
@@ -433,34 +417,18 @@ struct HomeView: View {
 
     @MainActor
     private func startMicrophoneStreaming() async throws {
-        guard !isMicrophoneStreaming else { return }
-        do {
-            try await speechTranscriber.setUpTranscriber()
-            let stream = try await input.startStreaming()
-            speechTranscriber.startTranscribing(from: stream)
-        } catch {
-            await input.stopStreaming()
-            throw error
-        }
-        isMicrophoneStreaming = true
+        try await recognitionState.startMicrophoneStreaming()
     }
 
     @MainActor
     private func stopMicrophoneStreaming() async {
-        guard isMicrophoneStreaming else { return }
-        await input.stopStreaming()
-        do {
-            try await speechTranscriber.finishTranscribing()
-        } catch {
-            print("Failed to finish transcribing: \(error)")
-        }
-        isMicrophoneStreaming = false
+        await recognitionState.stopMicrophoneStreaming()
     }
 
     @MainActor
     private func toggleMicrophoneListening() async {
         guard !recognitionState.isMusicRecognitionActive else { return }
-        if isMicrophoneStreaming {
+        if recognitionState.isMicrophoneStreaming {
             await stopMicrophoneStreaming()
         } else if microphonePermissionGranted {
             do {
@@ -490,11 +458,6 @@ struct HomeView: View {
             await stopMicrophoneStreaming()
         }
     }
-}
-
-@MainActor
-private final class MicrophoneInputHolder: ObservableObject {
-    let input = MicrophoneInput()
 }
 
 #Preview {

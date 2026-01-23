@@ -74,8 +74,16 @@ public class MusicPlayer {
 	public var isUserPaused: Bool = false
 	public var prePlayHook: (() async -> Void)?
 	public var isSeeking: Bool = false
-	public private(set) var isPlaying: Bool = false
-
+	public private(set) var isPlaying: Bool = false {
+		didSet {
+			if oldValue != isPlaying {
+				onIsPlayingChange?(isPlaying)
+			}
+		}
+	}
+	public var onIsPlayingChange: ((Bool) -> Void)?
+	
+	
 	public init(provider: StreamingMusicProvider = Unauthorized()) {
 		self.provider = provider
 		startProviderPlaybackMonitor()

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import MusicKit
+@_implementationOnly import MusicKit
 import Combine
 import Auth
 import AuthenticationServices

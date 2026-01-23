@@ -128,7 +128,7 @@ public actor MicrophoneInput {
 #if os(iOS)
     private func setUpAudioSession() throws {
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .spokenAudio)
+        try audioSession.setCategory(.playAndRecord, mode: .spokenAudio, options: [.defaultToSpeaker, .allowBluetooth, .mixWithOthers])
         try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
     }
 

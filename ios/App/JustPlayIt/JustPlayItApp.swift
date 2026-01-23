@@ -14,11 +14,15 @@ import MusicStreaming
 	@StateObject private var authManager: AuthorizationManager
 	@State private var musicPlayer = MusicPlayer()
 	@StateObject private var recognitionState = RecognitionListeningState()
+	@StateObject private var autoListenCoordinator: AutoListenCoordinator
 	
 	init() {
 		let musicPlayer = MusicPlayer()
+		let recognitionState = RecognitionListeningState()
 		_musicPlayer = State(initialValue: musicPlayer)
+		_recognitionState = StateObject(wrappedValue: recognitionState)
 		_authManager = StateObject(wrappedValue: AuthorizationManager())
+		_autoListenCoordinator = StateObject(wrappedValue: AutoListenCoordinator(musicPlayer: musicPlayer, recognitionState: recognitionState))
 	}
 
 	var sharedModelContainer: ModelContainer = {
