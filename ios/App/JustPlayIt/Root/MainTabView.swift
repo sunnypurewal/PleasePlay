@@ -33,7 +33,8 @@ struct MainTabView: View {
         }
         .tabViewBottomAccessory {
             if let currentSong = musicPlayer.currentTrack {
-                MiniPlayerView(currentSong: currentSong, musicPlayer: musicPlayer, isAccessory: true)
+                MiniPlayerView(currentSong: currentSong, musicPlayer: musicPlayer)
+					.contentShape(Rectangle())
                     .onTapGesture {
                         showPlayer = true
                     }

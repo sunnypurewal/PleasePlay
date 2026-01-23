@@ -4,7 +4,6 @@ import MusicStreaming
 struct MiniPlayerView: View {
 	let currentSong: Track
 	@Bindable var musicPlayer: MusicPlayer
-	var isAccessory: Bool = false
 	@EnvironmentObject var authManager: AuthorizationManager
 	@State private var showAuthenticationSheet = false
 	
@@ -15,48 +14,14 @@ struct MiniPlayerView: View {
 	}
 	
 	var body: some View {
-		let contentBody = miniPlayerContent
+		miniPlayerContent
 			.padding(12)
 			.frame(maxWidth: .infinity)
 			.frame(maxHeight: .infinity, alignment: .center)
-
-		Group {
-			if isAccessory {
-				contentBody
-			} else {
-				contentBody
-					.background {
-						Capsule()
-							.fill(.ultraThinMaterial)
-							.overlay(
-								Capsule()
-									.stroke(Color.white.opacity(0.3), lineWidth: 0.4)
-							)
-							.overlay(
-								Capsule()
-									.fill(
-										LinearGradient(
-											colors: [
-												Color.white.opacity(0.35),
-												Color.white.opacity(0.05),
-												Color.blue.opacity(0.15)
-											],
-											startPoint: .topLeading,
-											endPoint: .bottomTrailing
-										)
-									)
-									.blendMode(.screen)
-									.opacity(0.6)
-							)
-					}
-					.shadow(color: Color.black.opacity(0.18), radius: 24, x: 0, y: 12)
-					.padding(.horizontal, 18)
+			.sheet(isPresented: $showAuthenticationSheet) {
+				AuthenticationView()
+					.environmentObject(authManager)
 			}
-		}
-		.sheet(isPresented: $showAuthenticationSheet) {
-			AuthenticationView()
-				.environmentObject(authManager)
-		}
 	}
 
 	private var miniPlayerContent: some View {
