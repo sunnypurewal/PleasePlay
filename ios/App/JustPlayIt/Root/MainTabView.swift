@@ -40,23 +40,17 @@ struct MainTabView: View {
                         .onTapGesture {
                             showPlayer = true
                         }
-                        .padding(.bottom, bottomPadding(for: safeAreaBottom))
+						.padding(.bottom, geometry.safeAreaInsets.bottom)
+						.border(.red)
                 }
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
+//            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .sheet(isPresented: $showPlayer) {
             if let currentSong = musicPlayer.currentTrack {
                 NowPlayingView(currentSong: currentSong, musicPlayer: musicPlayer)
             }
         }
-    }
-
-    private func bottomPadding(for safeAreaBottom: CGFloat) -> CGFloat {
-        let tabBarHeight: CGFloat = 49
-        let basePadding = max(0, tabBarHeight - safeAreaBottom)
-        let previewBannerExtra: CGFloat = authManager.isAuthorized ? 0 : 64
-        return basePadding + previewBannerExtra
     }
 }
 
