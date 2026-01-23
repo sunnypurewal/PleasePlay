@@ -59,5 +59,5 @@ struct MainTabView: View {
     MainTabView()
         .environment(previewPlayer)
         .environmentObject(RecognitionListeningState())
-        .environmentObject(AuthorizationManager(musicPlayer: previewPlayer))
+        .environmentObject(AuthorizationManager())
 }

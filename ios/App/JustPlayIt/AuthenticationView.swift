@@ -85,5 +85,5 @@ struct AuthenticationView: View {
 
 #Preview {
 	AuthenticationView()
-		.environmentObject(AuthorizationManager(musicPlayer: MusicPlayer()))
+		.environmentObject(AuthorizationManager())
 }

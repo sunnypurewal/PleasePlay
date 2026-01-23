@@ -10,7 +10,7 @@ import SwiftData
 import MusicStreaming
 
 @main
-struct JustPlayItApp: App {
+	struct JustPlayItApp: App {
 	@StateObject private var authManager: AuthorizationManager
 	@State private var musicPlayer = MusicPlayer()
 	@StateObject private var recognitionState = RecognitionListeningState()
@@ -18,7 +18,7 @@ struct JustPlayItApp: App {
 	init() {
 		let musicPlayer = MusicPlayer()
 		_musicPlayer = State(initialValue: musicPlayer)
-		_authManager = StateObject(wrappedValue: AuthorizationManager(musicPlayer: musicPlayer))
+		_authManager = StateObject(wrappedValue: AuthorizationManager())
 	}
 
 	var sharedModelContainer: ModelContainer = {
@@ -48,6 +48,10 @@ struct JustPlayItApp: App {
 			.environmentObject(authManager)
 			.task {
 				configureRecognitionPrePlayHook()
+				applyCurrentProvider()
+			}
+			.onChange(of: authManager.currentProvider) { _ in
+				applyCurrentProvider()
 			}
 		}
 		.modelContainer(sharedModelContainer)
@@ -57,6 +61,15 @@ struct JustPlayItApp: App {
 	private func configureRecognitionPrePlayHook() {
 		musicPlayer.prePlayHook = {
 			await recognitionState.requestCancelRecognition(skipResume: true)
+		}
+	}
+
+	@MainActor
+	private func applyCurrentProvider() {
+		if let provider = authManager.providerForCurrentSelection() {
+			musicPlayer.setProvider(provider)
+		} else {
+			musicPlayer.setProvider(Unauthorized())
 		}
 	}
 }

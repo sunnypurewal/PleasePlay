@@ -27,12 +27,10 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
 
     private var tidalClientId: String = "P7AYqSKY9Slcppll" // Replace with actual ID
     private var tidalClientSecret: String = "Wnb5SD6xV2gBz6CRWN3ipJNQ0QcGv3Piudmy8m1lcc=" // Replace with actual Secret
-    private let musicPlayer: MusicPlayer
 
-	public init(musicPlayer: MusicPlayer) {
-        self.musicPlayer = musicPlayer
+	public override init() {
         super.init()
-		
+
 		let config = AuthConfig(
 			clientId: tidalClientId,
 			clientSecret: tidalClientSecret,
@@ -56,11 +54,9 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
         if appleMusicStatus == .authorized {
             self.isAuthorized = true
             self.currentProvider = .appleMusic
-            self.musicPlayer.setProvider(AppleMusic())
         } else if TidalAuth.shared.isUserLoggedIn {
             self.isAuthorized = true
             self.currentProvider = .tidal
-            self.musicPlayer.setProvider(Tidal(clientId: tidalClientId, clientSecret: tidalClientSecret))
         } else {
             self.isAuthorized = false
             self.currentProvider = .none
@@ -73,7 +69,6 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
         if status == .authorized {
             self.isAuthorized = true
             self.currentProvider = .appleMusic
-            self.musicPlayer.setProvider(AppleMusic())
         }
     }
 
@@ -115,7 +110,6 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
             _ = try await TidalAuth.shared.finalizeLogin(loginResponseUri: callbackURL.absoluteString)
             self.isAuthorized = true
             self.currentProvider = .tidal
-            self.musicPlayer.setProvider(Tidal(clientId: tidalClientId, clientSecret: tidalClientSecret))
         } catch {
             print("Failed to finalize Tidal login: \(error)")
             self.isAuthorized = false
@@ -130,5 +124,16 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
     
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         return ASPresentationAnchor()
+    }
+
+    public func providerForCurrentSelection() -> StreamingMusicProvider? {
+        switch currentProvider {
+        case .appleMusic:
+            return AppleMusic()
+        case .tidal:
+            return Tidal(clientId: tidalClientId, clientSecret: tidalClientSecret)
+        case .spotify, .youtube, .none:
+            return nil
+        }
     }
 }

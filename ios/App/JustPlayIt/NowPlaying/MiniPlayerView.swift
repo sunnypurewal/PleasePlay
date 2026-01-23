@@ -116,5 +116,5 @@ struct MiniPlayerView: View {
 
 //#Preview {
 //	MiniPlayerView(currentSong: Track(title: "Blackbird", artist: "The Beatles", album: "The Beatles", duration: 400), musicPlayer: .init())
-//		.environmentObject(AuthorizationManager(musicPlayer: <#T##MusicPlayer#>))
+//		.environmentObject(AuthorizationManager())
 //}
