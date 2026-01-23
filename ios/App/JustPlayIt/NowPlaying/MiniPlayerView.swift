@@ -61,36 +61,6 @@ struct MiniPlayerView: View {
 
 	private var miniPlayerContent: some View {
 		VStack(alignment: .leading, spacing: 6) {
-			if !authManager.isAuthorized {
-				HStack(spacing: 12) {
-					VStack(alignment: .leading, spacing: 2) {
-						Text("Preview Only")
-							.font(.caption2)
-							.fontWeight(.semibold)
-							.textCase(.uppercase)
-						Text("Connect your favourite streaming music provider to listen to full songs.")
-							.font(.caption2)
-							.foregroundColor(.secondary)
-							.lineLimit(2)
-							.multilineTextAlignment(.leading)
-							.fixedSize(horizontal: false, vertical: true)
-							.layoutPriority(1)
-							.frame(maxWidth: .infinity, alignment: .leading)
-					}
-
-					Spacer()
-
-					Button("Connect") {
-						showAuthenticationSheet = true
-					}
-					.font(.caption2)
-					.padding(.horizontal, 10)
-					.padding(.vertical, 6)
-					.background(Capsule().fill(Color.accentColor))
-					.foregroundColor(.white)
-				}
-				.padding(12)
-			}
 
 			HStack(alignment: .center, spacing: 12) {
 				if let artworkURL = currentSong.artworkURL {
