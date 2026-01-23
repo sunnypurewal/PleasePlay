@@ -165,6 +165,11 @@ struct NowPlayingView: View {
             AuthenticationView()
                 .environmentObject(authManager)
         }
+        .onChange(of: authManager.isAuthorized) { isAuthorized in
+            if isAuthorized {
+                showAuthenticationSheet = false
+            }
+        }
         .onChange(of: currentSong.serviceIDs) { _, _ in
             isDragging = false
             dragValue = 0

@@ -22,6 +22,11 @@ struct MiniPlayerView: View {
 				AuthenticationView()
 					.environmentObject(authManager)
 			}
+			.onChange(of: authManager.isAuthorized) { isAuthorized in
+				if isAuthorized {
+					showAuthenticationSheet = false
+				}
+			}
 	}
 
 	private var miniPlayerContent: some View {

@@ -34,13 +34,13 @@ struct AuthenticationView: View {
 			}
 			
 			// Spotify
-			Button(action: {
-				// TODO: Implement Spotify Auth
-			}) {
+			Button(action: {}) {
 				HStack {
-					// In a real app, you would include the Spotify logo asset here
 					Text("Connect Spotify")
 						.fontWeight(.semibold)
+					Text("– coming soon")
+						.font(.footnote)
+						.foregroundColor(.white.opacity(0.85))
 				}
 				.frame(width: 280)
 				.padding()
@@ -48,21 +48,16 @@ struct AuthenticationView: View {
 				.foregroundColor(.white)
 				.cornerRadius(12)
 			}
+			.disabled(true)
 			
 			// Tidal
-			Button(action: {
-				Task {
-					do {
-						try await authManager.authorizeTidal()
-					} catch {
-						print("Error authorizing Tidal: \(error.localizedDescription)")
-					}
-				}
-			}) {
+			Button(action: {}) {
 				HStack {
-					// In a real app, you would include the Tidal logo asset here
 					Text("Connect Tidal")
 						.fontWeight(.semibold)
+					Text("– coming soon")
+						.font(.footnote)
+						.foregroundColor(.white.opacity(0.85))
 				}
 				.frame(width: 280)
 				.padding()
@@ -70,6 +65,7 @@ struct AuthenticationView: View {
 				.foregroundColor(.white)
 				.cornerRadius(12)
 			}
+			.disabled(true)
 			
 			Spacer()
 		}
