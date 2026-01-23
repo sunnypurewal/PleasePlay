@@ -87,7 +87,7 @@ private struct AuthenticationReminderBanner: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .textCase(.uppercase)
-                Text("Connect your favourite music provider to keep listening.")
+                Text("Connect your favourite streaming music provider to listen to full songs.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }

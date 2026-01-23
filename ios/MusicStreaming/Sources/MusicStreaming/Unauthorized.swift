@@ -156,6 +156,9 @@ public class Unauthorized: StreamingMusicProvider {
 				do {
 					try await Task.sleep(for: .seconds(0.5))
 				} catch {
+					if error is CancellationError {
+						break
+					}
 					print("Playback monitor sleep failed: \(error)")
 				}
 				guard !Task.isCancelled else { break }
@@ -175,6 +178,7 @@ public class Unauthorized: StreamingMusicProvider {
 				}
 			}
 			if Task.isCancelled {
+				playbackMonitorTask = nil
 				return
 			}
 			playbackMonitorTask = nil
