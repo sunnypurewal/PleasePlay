@@ -9,42 +9,35 @@ struct MainTabView: View {
     @EnvironmentObject private var authManager: AuthorizationManager
 
     var body: some View {
-        GeometryReader { geometry in
-            let safeAreaBottom = geometry.safeAreaInsets.bottom
-            ZStack(alignment: .bottom) {
-                TabView {
-                    HomeView()
-                        .tabItem {
-                            Label("Home", systemImage: "house.fill")
-                        }
+        TabView {
+            HomeView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
 
-                    NavigationStack {
-                        DiscoverView()
-                            .navigationTitle("Discover")
-                    }
-                    .tabItem {
-                        Label("Discover", systemImage: "sparkles")
-                    }
-                    
-                    NavigationStack {
-                        HistoryView(songs: historySongs)
-                            .navigationTitle("History")
-                    }
-                    .tabItem {
-                        Label("History", systemImage: "clock.fill")
-                    }
-                }
-                
-                if let currentSong = musicPlayer.currentTrack {
-                    MiniPlayerView(currentSong: currentSong, musicPlayer: musicPlayer)
-                        .onTapGesture {
-                            showPlayer = true
-                        }
-						.padding(.bottom, geometry.safeAreaInsets.bottom)
-						.border(.red)
-                }
+            NavigationStack {
+                DiscoverView()
+                    .navigationTitle("Discover")
             }
-//            .frame(width: geometry.size.width, height: geometry.size.height)
+            .tabItem {
+                Label("Discover", systemImage: "sparkles")
+            }
+            
+            NavigationStack {
+                HistoryView(songs: historySongs)
+                    .navigationTitle("History")
+            }
+            .tabItem {
+                Label("History", systemImage: "clock.fill")
+            }
+        }
+        .tabViewBottomAccessory {
+            if let currentSong = musicPlayer.currentTrack {
+                MiniPlayerView(currentSong: currentSong, musicPlayer: musicPlayer, isAccessory: true)
+                    .onTapGesture {
+                        showPlayer = true
+                    }
+            }
         }
         .sheet(isPresented: $showPlayer) {
             if let currentSong = musicPlayer.currentTrack {

@@ -1,3 +1,4 @@
+data/
 function.zip
 response.json
 *.parquet.gz

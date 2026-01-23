@@ -21,7 +21,7 @@ public actor Predictor {
 		guard model == nil else { return }
 		isLoading = true
 		model = try MusicNER()
-		tokenizer = try await loadBertTokenizer(fromVocabFile: "vocab", withExtension: "txt")
+		tokenizer = try await loadTokenizer()
 		isLoading = false
 		print("MusicNER model loaded successfully")
 	}
@@ -69,6 +69,7 @@ public actor Predictor {
 			input_ids[i] = NSNumber(value: tokens[i])
 			attention_mask[i] = 1
 		}
+		print(tokens)
 		
 		print("Input prepared (tokens: \(filledCount)), making prediction")
 		let input = MusicNERInput(input_ids: input_ids, attention_mask: attention_mask)
@@ -172,7 +173,7 @@ public actor Predictor {
 		case initializationError(String)
 	}
 	
-	func loadBertTokenizer(fromVocabFile vocabFileName: String, withExtension ext: String) async throws -> any Tokenizer {
+	func loadTokenizer() async throws -> any Tokenizer {
 		return try await AutoTokenizer.from(pretrained: "distilbert/distilbert-base-cased-distilled-squad")
 	}
 }

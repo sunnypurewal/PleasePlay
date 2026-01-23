@@ -4,6 +4,7 @@ import MusicStreaming
 struct MiniPlayerView: View {
 	let currentSong: Track
 	@Bindable var musicPlayer: MusicPlayer
+	var isAccessory: Bool = false
 	@EnvironmentObject var authManager: AuthorizationManager
 	@State private var showAuthenticationSheet = false
 	
@@ -14,12 +15,57 @@ struct MiniPlayerView: View {
 	}
 	
 	var body: some View {
-		VStack(spacing: 6) {
+		let contentBody = miniPlayerContent
+			.padding(12)
+			.frame(maxWidth: .infinity)
+			.frame(maxHeight: .infinity, alignment: .center)
+
+		Group {
+			if isAccessory {
+				contentBody
+			} else {
+				contentBody
+					.background {
+						Capsule()
+							.fill(.ultraThinMaterial)
+							.overlay(
+								Capsule()
+									.stroke(Color.white.opacity(0.3), lineWidth: 0.4)
+							)
+							.overlay(
+								Capsule()
+									.fill(
+										LinearGradient(
+											colors: [
+												Color.white.opacity(0.35),
+												Color.white.opacity(0.05),
+												Color.blue.opacity(0.15)
+											],
+											startPoint: .topLeading,
+											endPoint: .bottomTrailing
+										)
+									)
+									.blendMode(.screen)
+									.opacity(0.6)
+							)
+					}
+					.shadow(color: Color.black.opacity(0.18), radius: 24, x: 0, y: 12)
+					.padding(.horizontal, 18)
+			}
+		}
+		.sheet(isPresented: $showAuthenticationSheet) {
+			AuthenticationView()
+				.environmentObject(authManager)
+		}
+	}
+
+	private var miniPlayerContent: some View {
+		VStack(alignment: .leading, spacing: 6) {
 			if !authManager.isAuthorized {
 				HStack(spacing: 12) {
 					VStack(alignment: .leading, spacing: 2) {
 						Text("Preview Only")
-							.font(.caption)
+							.font(.caption2)
 							.fontWeight(.semibold)
 							.textCase(.uppercase)
 						Text("Connect your favourite streaming music provider to listen to full songs.")
@@ -46,7 +92,7 @@ struct MiniPlayerView: View {
 				.padding(12)
 			}
 
-			HStack(spacing: 12) {
+			HStack(alignment: .center, spacing: 12) {
 				if let artworkURL = currentSong.artworkURL {
 					AsyncImage(url: artworkURL) { image in
 						image.resizable()
@@ -66,13 +112,14 @@ struct MiniPlayerView: View {
 						)
 				}
 
-				VStack(alignment: .leading, spacing: 2) {
-					Text(currentSong.title)
-						.fontWeight(.semibold)
-						.lineLimit(1)
+					VStack(alignment: .leading, spacing: 2) {
+						Text(currentSong.title)
+							.fontWeight(.semibold)
+							.font(.callout)
+							.lineLimit(1)
 
-					Text(currentSong.artist)
-						.font(.subheadline)
+						Text(currentSong.artist)
+							.font(.caption)
 						.foregroundColor(.secondary)
 						.lineLimit(1)
 				}
@@ -97,10 +144,6 @@ struct MiniPlayerView: View {
 						.frame(width: 44, height: 44)
 				}
 				.buttonStyle(.plain)
-				.background(
-					Circle()
-						.fill(Color.primary.opacity(0.12))
-				)
 				.foregroundColor(.primary)
 			}
 			.padding(.horizontal, 8)
@@ -111,39 +154,6 @@ struct MiniPlayerView: View {
 				.frame(height: 2)
 				.padding(.horizontal, 8)
 				.opacity(currentSong.duration == 0 ? 0 : 1)
-		}
-
-		.padding(.vertical, 8)
-		.padding(.horizontal, 12)
-		.background {
-			Capsule()
-				.fill(.ultraThinMaterial)
-				.overlay(
-					Capsule()
-						.stroke(Color.white.opacity(0.3), lineWidth: 0.4)
-				)
-				.overlay(
-					Capsule()
-						.fill(
-							LinearGradient(
-								colors: [
-									Color.white.opacity(0.35),
-									Color.white.opacity(0.05),
-									Color.blue.opacity(0.15)
-								],
-								startPoint: .topLeading,
-								endPoint: .bottomTrailing
-							)
-						)
-						.blendMode(.screen)
-						.opacity(0.6)
-				)
-		}
-		.shadow(color: Color.black.opacity(0.18), radius: 24, x: 0, y: 12)
-		.padding(.horizontal, 18)
-		.sheet(isPresented: $showAuthenticationSheet) {
-			AuthenticationView()
-				.environmentObject(authManager)
 		}
 	}
 }
