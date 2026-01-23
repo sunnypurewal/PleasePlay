@@ -71,13 +71,15 @@ def main():
     # Load the custom datasets
     print("Loading custom IOB datasets...")
     
-    dataset_dirs = [
-        "data/reddit+shsyt/dataset1", 
-        "data/reddit+shsyt/dataset2", 
-        "data/reddit+shsyt/dataset3", 
-        "data/reddit+shsyt/dataset4",
-        "data/reddit+shsyt/dataset5"
-    ]
+    import os
+    base_dataset_dirs = ["data/reddit+shsyt", "data/deezer"]
+    dataset_dirs = []
+    for base in base_dataset_dirs:
+        if os.path.exists(base):
+            for d in sorted(os.listdir(base)):
+                full_path = os.path.join(base, d)
+                if os.path.isdir(full_path):
+                    dataset_dirs.append(full_path)
     
     all_train_tokens = []
     all_train_tags = []
@@ -85,8 +87,13 @@ def main():
     all_test_tags = []
 
     for dataset_dir in dataset_dirs:
-        train_path = f"{dataset_dir}/train.IOB"
-        test_path = f"{dataset_dir}/test.IOB"
+        # Try both .IOB and .bio extensions
+        train_path = os.path.join(dataset_dir, "train.IOB")
+        test_path = os.path.join(dataset_dir, "test.IOB")
+        
+        if not os.path.exists(train_path):
+            train_path = os.path.join(dataset_dir, "train.bio")
+            test_path = os.path.join(dataset_dir, "test.bio")
         
         try:
             train_data_part = load_bio_file(train_path)
@@ -97,8 +104,12 @@ def main():
             all_test_tokens.extend(test_data_part["tokens"])
             all_test_tags.extend(test_data_part["ner_tags"])
             print(f"Successfully loaded {dataset_dir}: {len(train_data_part['tokens'])} train, {len(test_data_part['tokens'])} test examples.")
-        except FileNotFoundError as e:
-            print(f"⚠️  Warning: Could not find {e.filename}. Skipping this file.")
+        except FileNotFoundError:
+            # Only print warning if we didn't find any supported files
+            if not os.path.exists(train_path):
+                print(f"⚠️  Warning: Could not find train.IOB or train.bio in {dataset_dir}. Skipping.")
+            else:
+                print(f"⚠️  Warning: Could not find test file corresponding to {train_path}. Skipping.")
 
     train_data = {"tokens": all_train_tokens, "ner_tags": all_train_tags}
     test_data = {"tokens": all_test_tokens, "ner_tags": all_test_tags}

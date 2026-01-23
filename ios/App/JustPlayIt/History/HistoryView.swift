@@ -201,8 +201,7 @@ private struct HistoryRow: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+
             Button {
                 clearLikes()
             } label: {
@@ -216,6 +215,14 @@ private struct HistoryRow: View {
                 Label("Clear Plays", systemImage: "play.slash")
             }
             .tint(.orange)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                addToPlaylist()
+            } label: {
+                Label("Add to Playlist", systemImage: "text.badge.plus")
+            }
+            .tint(.accentColor)
         }
     }
 
@@ -331,6 +338,11 @@ private struct HistoryRow: View {
         } catch {
             print("Failed to persist track changes: \(error)")
         }
+    }
+
+    private func addToPlaylist() {
+        let track = Track(playedTrack: song)
+        print("Add to playlist tapped for \(track.title) by \(track.artist)")
     }
 }
 

@@ -158,7 +158,7 @@ struct HomeView: View {
                 speechTranscriber.resetTranscripts()
                 return
             }
-            let text = String(transcript[triggerRange.lowerBound...]).lowercased()
+			let text = String(transcript[triggerRange.upperBound...])
             Task {
                 do {
                     let output = try await predictor.predictEntities(from: text)
