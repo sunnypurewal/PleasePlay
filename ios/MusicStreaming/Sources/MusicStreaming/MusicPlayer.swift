@@ -6,8 +6,6 @@
 //
 
 import Foundation
-@preconcurrency import MusicKit
-
 public struct StreamingServiceIDs: Codable, Hashable {
 	public var appleMusic: String?
 	public var spotify: String?
@@ -73,7 +71,6 @@ public protocol StreamingMusicProvider {
 public class MusicPlayer {
 	private var provider: StreamingMusicProvider
 	private var fallbackProvider: AppleMusic?
-	private var hasRequestedMusicAuthorization = false
 	public var isUserPaused: Bool = false
 	public var prePlayHook: (() async -> Void)?
 	public var isSeeking: Bool = false
@@ -92,7 +89,6 @@ public class MusicPlayer {
 	
 	@discardableResult
 	public func play(artist: String, song: String) async throws -> Track {
-		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
 		let track = try await provider.play(artist: artist, song: song)
@@ -102,7 +98,6 @@ public class MusicPlayer {
 
 	@discardableResult
 	public func play(track: Track) async throws -> Track {
-		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
 		let playedTrack = try await provider.play(track: track)
@@ -120,7 +115,6 @@ public class MusicPlayer {
 		updatePlayingState()
 	}
 	public func unpause() async throws {
-		await requestMusicAuthorizationIfNeeded()
 		isUserPaused = false
 		await runPrePlayHook()
 		try await provider.unpause()
@@ -184,15 +178,6 @@ public class MusicPlayer {
 	private func stopProviderPlaybackMonitor() {
 		providerPlaybackMonitorTask?.cancel()
 		providerPlaybackMonitorTask = nil
-	}
-	
-	private func requestMusicAuthorizationIfNeeded() async {
-		guard !hasRequestedMusicAuthorization else { return }
-		let status = MusicAuthorization.currentStatus
-		if status == .notDetermined {
-			_ = await MusicAuthorization.request()
-		}
-		hasRequestedMusicAuthorization = true
 	}
 }
 
