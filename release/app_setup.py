@@ -93,20 +93,30 @@ def setup_age_ratings(token, age_rating_id):
             "type": "ageRatingDeclarations",
             "id": age_rating_id,
             "attributes": {
+                "advertising": False,
+                "ageAssurance": False,
                 "alcoholTobaccoOrDrugUseOrReferences": "NONE",
                 "contests": "NONE",
                 "gambling": False,
                 "gamblingSimulated": "NONE",
+                "gunsOrOtherWeapons": "NONE",
+                "healthOrWellnessTopics": False,
                 "horrorOrFearThemes": "NONE",
+                "lootBox": False,
                 "matureOrSuggestiveThemes": "NONE",
                 "medicalOrTreatmentInformation": "NONE",
+                "messagingAndChat": False,
+                "parentalControls": False,
                 "profanityOrCrudeHumor": "NONE",
-                "sexualContentOrNudity": "NONE",
                 "sexualContentGraphicAndNudity": "NONE",
+                "sexualContentOrNudity": "NONE",
                 "unrestrictedWebAccess": False,
+                "userGeneratedContent": False,
                 "violenceCartoonOrFantasy": "NONE",
                 "violenceRealistic": "NONE",
-                "violenceRealisticProlongedGraphicOrSadistic": "NONE"
+                "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+                "ageRatingOverrideV2": "NONE",
+                "koreaAgeRatingOverride": "NONE"
             }
         }
     }
