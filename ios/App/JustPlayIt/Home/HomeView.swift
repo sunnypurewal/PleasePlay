@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import AVFoundation
 import CoreML
 import SwiftData
@@ -20,7 +21,8 @@ struct HomeView: View {
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var microphonePermissionGranted = false
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
-    private let input = MicrophoneInput()
+    @StateObject private var microphoneInputHolder = MicrophoneInputHolder()
+    private var input: MicrophoneInput { microphoneInputHolder.input }
     @State private var speechTranscriber = SpokenWordTranscriber()
     @State private var predictor = Predictor()
     @State private var isMicrophoneStreaming = false
@@ -71,8 +73,8 @@ struct HomeView: View {
                     .onAppear {
                         refreshVoiceCommandSuggestion()
                     }
-				}
-				Spacer()
+                }
+                Spacer()
             }
             
             Spacer()
@@ -156,7 +158,7 @@ struct HomeView: View {
                 speechTranscriber.resetTranscripts()
                 return
             }
-			let text = String(transcript[triggerRange.lowerBound...]).lowercased()
+            let text = String(transcript[triggerRange.lowerBound...]).lowercased()
             Task {
                 do {
                     let output = try await predictor.predictEntities(from: text)
@@ -340,7 +342,7 @@ struct HomeView: View {
             }
         }
 
-		AVAudioApplication.requestRecordPermission(completionHandler: completion)
+        AVAudioApplication.requestRecordPermission(completionHandler: completion)
     }
 
     private func handleMicrophonePermissionResult(granted: Bool) {
@@ -477,6 +479,11 @@ struct HomeView: View {
             await stopMicrophoneStreaming()
         }
     }
+}
+
+@MainActor
+private final class MicrophoneInputHolder: ObservableObject {
+    let input = MicrophoneInput()
 }
 
 #Preview {
