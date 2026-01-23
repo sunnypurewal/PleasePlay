@@ -173,6 +173,8 @@ public class Unauthorized: StreamingMusicProvider {
 					let durationSeconds = item.asset.duration.seconds
 					if durationSeconds.isFinite && player.currentTime().seconds >= durationSeconds {
 						isPlaying = false
+						await player.seek(to: .zero) // Reset playback so play restarts from start after completion
+						currentPlaybackTime = 0
 						break
 					}
 				}

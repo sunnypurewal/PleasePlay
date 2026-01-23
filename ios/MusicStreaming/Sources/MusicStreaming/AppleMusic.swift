@@ -71,6 +71,7 @@ public class AppleMusic: StreamingMusicProvider {
 
     private func playSongItem(_ songItem: Song) async throws -> Track {
         player.queue = [songItem]
+        try await player.prepareToPlay()
         try await player.play()
 
         let playingTrack = Track(
