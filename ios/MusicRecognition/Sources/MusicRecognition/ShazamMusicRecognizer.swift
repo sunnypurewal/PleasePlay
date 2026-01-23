@@ -126,8 +126,8 @@ public actor ShazamMusicRecognizer: MusicRecognitionProtocol {
             throw MusicRecognitionError.microphonePermissionDenied
         }
 
-        try audioSession.setCategory(.record, mode: .measurement, options: [.mixWithOthers])
-        try audioSession.setActive(true, options: [.notifyOthersOnDeactivation])
+		try audioSession.setCategory(.playAndRecord, mode: .default, options: [.allowAirPlay, .allowBluetoothA2DP, .allowBluetoothHFP])
+		try audioSession.setActive(true, options: [.notifyOthersOnDeactivation])
     }
 
     private func startAudioEngine() throws {

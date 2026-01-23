@@ -16,6 +16,7 @@ import MusicAI
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \PlayedTrack.addedAt, order: .reverse) private var playedTracks: [PlayedTrack]
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
@@ -235,12 +236,8 @@ struct HomeView: View {
             Task {
                 if isPlaying {
                     await stopMicrophoneStreaming()
-                } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
-                    do {
-                        try await startMicrophoneStreaming()
-                    } catch {
-                        print("Failed to resume microphone streaming: \(error)")
-                    }
+                } else {
+                    await resumeAutomaticListeningIfAllowed(reason: "playback stopped")
                 }
             }
         }
@@ -248,12 +245,15 @@ struct HomeView: View {
             Task {
                 if isActive {
                     await stopMicrophoneStreaming()
-                } else if isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !musicPlayer.isPlaying && microphonePermissionGranted {
-                    do {
-                        try await startMicrophoneStreaming()
-                    } catch {
-                        print("Failed to resume microphone streaming after recognition: \(error)")
-                    }
+                } else {
+                    await resumeAutomaticListeningIfAllowed(reason: "recognition ended")
+                }
+            }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                Task {
+                    await resumeAutomaticListeningIfAllowed(reason: "app foregrounded")
                 }
             }
         }
@@ -324,13 +324,9 @@ struct HomeView: View {
         }
         
         microphonePermissionGranted = isGranted
-        if shouldStartListening && isGranted && !musicPlayer.isPlaying && isAutomaticListeningEnabled && recognitionState.shouldAutomaticallyListenForCommands && !recognitionState.isMusicRecognitionActive {
+        if shouldStartListening {
             Task {
-                do {
-                    try await startMicrophoneStreaming()
-                } catch {
-                    print("Failed to start microphone streaming: \(error)")
-                }
+                await resumeAutomaticListeningIfAllowed(reason: "microphone permission check")
             }
         }
     }
@@ -365,6 +361,21 @@ struct HomeView: View {
             } catch {
                 print("Failed to start initial streaming: \(error)")
             }
+        }
+    }
+
+    @MainActor
+    private func resumeAutomaticListeningIfAllowed(reason: String) async {
+        guard isAutomaticListeningEnabled,
+              microphonePermissionGranted,
+              !musicPlayer.isPlaying,
+              recognitionState.shouldAutomaticallyListenForCommands,
+              !recognitionState.isMusicRecognitionActive else { return }
+
+        do {
+            try await startMicrophoneStreaming()
+        } catch {
+            print("Failed to resume microphone streaming (\(reason)): \(error)")
         }
     }
 
