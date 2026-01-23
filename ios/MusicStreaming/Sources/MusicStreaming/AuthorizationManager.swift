@@ -126,14 +126,14 @@ public class AuthorizationManager: NSObject, ObservableObject, ASWebAuthenticati
         return ASPresentationAnchor()
     }
 
-    public func providerForCurrentSelection() -> StreamingMusicProvider? {
+    public func providerForCurrentSelection() -> StreamingMusicProvider {
         switch currentProvider {
         case .appleMusic:
             return AppleMusic()
         case .tidal:
             return Tidal(clientId: tidalClientId, clientSecret: tidalClientSecret)
-        case .spotify, .youtube, .none:
-            return nil
+        default:
+            return Unauthorized()
         }
     }
 }

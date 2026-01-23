@@ -29,7 +29,7 @@ struct MicrophoneStatusView: View {
                     } else if isListening {
                         listeningStatusLabel()
                     } else {
-                        statusLabel(text: "Microphone is not listening", accent: .secondary.opacity(0.5))
+                        statusLabel(text: "Not listening for commands", accent: .secondary.opacity(0.5))
                     }
                 }
                 .buttonStyle(.plain)
@@ -94,7 +94,7 @@ struct MicrophoneStatusView: View {
                         pulseScale = 1.5
                     }
                 }
-            Text("Microphone is listening")
+            Text("Listening for commands")
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(.secondary)

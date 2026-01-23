@@ -50,7 +50,7 @@ import MusicStreaming
 				configureRecognitionPrePlayHook()
 				applyCurrentProvider()
 			}
-			.onChange(of: authManager.currentProvider) { _ in
+			.onChange(of: authManager.currentProvider) { _, _ in
 				applyCurrentProvider()
 			}
 		}
@@ -66,10 +66,6 @@ import MusicStreaming
 
 	@MainActor
 	private func applyCurrentProvider() {
-		if let provider = authManager.providerForCurrentSelection() {
-			musicPlayer.setProvider(provider)
-		} else {
-			musicPlayer.setProvider(Unauthorized())
-		}
+		musicPlayer.setProvider(authManager.providerForCurrentSelection())
 	}
 }

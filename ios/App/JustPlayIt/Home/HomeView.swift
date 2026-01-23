@@ -28,7 +28,8 @@ struct HomeView: View {
     @State private var isSearching = false
     @State private var hasAppeared = false
     @State private var hasStartedInitialListening = false
-    @State private var voiceCommandSuggestion = "Blackbird by The Beatles"
+    @State private var songVoiceCommandSuggestion = "Blackbird by The Beatles"
+    @State private var artistVoiceCommandSuggestion = "The Beatles"
     @State private var recognizedArtist = ""
     @State private var recognizedTitle = ""
     @State private var isPlayingDebounced = false
@@ -49,15 +50,27 @@ struct HomeView: View {
                     onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
                 )
                 if isMicrophoneStreaming {
-                    Text("Ask me to play a song or artist.")
-                    Text("\"**Please play** \(voiceCommandSuggestion)\"")
-						.font(.title3)
-						.foregroundColor(.secondary)
-						.multilineTextAlignment(.center)
-						.padding(.horizontal)
-						.onAppear {
-							refreshVoiceCommandSuggestion()
-						}
+                    VStack(spacing: 12) {
+                        Text("All commands start with \"Please play\"")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+
+                        VStack(spacing: 4) {
+                            Text("\"**Please play** \(songVoiceCommandSuggestion)\"")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                        }
+                        VStack(spacing: 4) {
+                            Text("\"**Please play** \(artistVoiceCommandSuggestion)\"")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .onAppear {
+                        refreshVoiceCommandSuggestion()
+                    }
 				}
 				Spacer()
             }
@@ -393,17 +406,16 @@ struct HomeView: View {
     }
 
     private func refreshVoiceCommandSuggestion() {
-        let suggestion: String
-        if let track = playedTracks.randomElement() {
-            let options = [
-                "\(track.title) by \(track.artist)",
-                track.artist
-            ].filter { !$0.isEmpty }
-            suggestion = options.randomElement() ?? "Blackbird by The Beatles"
+        if let track = playedTracks.randomElement(), !track.title.isEmpty, !track.artist.isEmpty {
+            songVoiceCommandSuggestion = "\(track.title) by \(track.artist)"
         } else {
-            suggestion = "Blackbird by The Beatles"
+            songVoiceCommandSuggestion = "Blackbird by The Beatles"
         }
-        voiceCommandSuggestion = suggestion
+
+        let artistOptions = playedTracks
+            .map { $0.artist }
+            .filter { !$0.isEmpty }
+        artistVoiceCommandSuggestion = artistOptions.randomElement() ?? "The Beatles"
     }
 
     @MainActor
