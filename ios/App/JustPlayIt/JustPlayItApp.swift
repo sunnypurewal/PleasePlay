@@ -66,6 +66,21 @@ import MusicStreaming
 
 	@MainActor
 	private func applyCurrentProvider() {
+		let wasPlaying = musicPlayer.isPlaying
+		guard let previouslyPlayingTrack = musicPlayer.currentTrack else {
+			musicPlayer.setProvider(authManager.providerForCurrentSelection())
+			return
+		}
+		musicPlayer.stop()
 		musicPlayer.setProvider(authManager.providerForCurrentSelection())
+		if wasPlaying {
+			Task {
+				do {
+					_ = try await musicPlayer.play(track: previouslyPlayingTrack)
+				} catch {
+					print("Failed to restart playback after provider switch: \(error)")
+				}
+			}
+		}
 	}
 }
