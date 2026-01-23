@@ -4,11 +4,13 @@ import MusicStreaming
 struct NowPlayingView: View {
 	let currentSong: Track
     @Bindable var musicPlayer: MusicPlayer
+    @EnvironmentObject var authManager: AuthorizationManager
     
     @State private var isDragging = false
     @State private var dragValue: TimeInterval = 0
     @State private var wasPlayingBeforeSeek = false
     @State private var showPauseDuringSeek = false
+    @State private var showAuthenticationSheet = false
     
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(max(0, time)) / 60
@@ -129,13 +131,40 @@ struct NowPlayingView: View {
 					Image(systemName: (isDragging && showPauseDuringSeek) || musicPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
 						.font(.system(size: 64))
 				}
-			}
+            }
 			.foregroundColor(.primary)
+            
+            if !authManager.isAuthorized {
+                VStack(spacing: 6) {
+                    Text("Preview mode")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .textCase(.uppercase)
+                    Text("Connect your favourite streaming music provider to listen to full songs.")
+                        .multilineTextAlignment(.center)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+
+                    Button("Connect") {
+                        showAuthenticationSheet = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.accentColor)
+                }
+                .padding()
+                .background(.thinMaterial)
+                .cornerRadius(12)
+                .padding(.horizontal)
+            }
 		}
 		.padding()
 		.background(Material.regular)
 		.cornerRadius(20, corners: [.topLeft, .topRight])
 		.shadow(radius: 5)
+        .sheet(isPresented: $showAuthenticationSheet) {
+            AuthenticationView()
+                .environmentObject(authManager)
+        }
         .onChange(of: currentSong.serviceIDs) { _, _ in
             isDragging = false
             dragValue = 0

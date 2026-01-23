@@ -4,7 +4,9 @@ import MusicStreaming
 struct MiniPlayerView: View {
     let currentSong: Track
     @Bindable var musicPlayer: MusicPlayer
-    
+    @EnvironmentObject var authManager: AuthorizationManager
+    @State private var showAuthenticationSheet = false
+
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(max(0, time)) / 60
         let seconds = Int(max(0, time)) % 60
@@ -13,6 +15,36 @@ struct MiniPlayerView: View {
     
     var body: some View {
         VStack(spacing: 8) {
+            if !authManager.isAuthorized {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Preview Only")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .textCase(.uppercase)
+                        Text("Connect your favourite streaming music provider to listen to full songs.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Spacer()
+
+                    Button("Connect") {
+                        showAuthenticationSheet = true
+                    }
+                    .font(.caption2)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.accentColor))
+                    .foregroundColor(.white)
+                }
+                .padding(12)
+            }
             HStack {
                 if let artworkURL = currentSong.artworkURL {
                     AsyncImage(url: artworkURL) { image in
@@ -77,6 +109,10 @@ struct MiniPlayerView: View {
         .padding(.horizontal)
         .padding(.top, 8)
         .padding(.bottom, 8)
+        .sheet(isPresented: $showAuthenticationSheet) {
+            AuthenticationView()
+                .environmentObject(authManager)
+        }
         .frame(height: 68)
     }
 }
