@@ -16,6 +16,9 @@ struct DiscoverView: View {
     @State private var recognitionResult: MusicRecognitionResult?
     @State private var errorMessage: String?
     @State private var wasPlayingBeforeRecognition = false
+    @State private var isContinuousRecognitionOnCooldown = false
+    @State private var continuousRecognitionCooldownTask: Task<Void, Never>?
+    private let continuousRecognitionCooldown: TimeInterval = 15
     private let activeListeningColor = Color.red
 
     var body: some View {
@@ -197,6 +200,7 @@ struct DiscoverView: View {
                 recognitionState.isMusicRecognitionActive = false
                 recognitionState.clearCancelRecognitionHandler()
             }
+            await resetContinuousRecognitionCooldown()
             await resumePlaybackIfNeeded()
             return
         }
@@ -211,9 +215,13 @@ struct DiscoverView: View {
                 await toggleContinuousRecognition()
             }
         }
+        await resetContinuousRecognitionCooldown()
         do {
             try await recognizer.startContinuousRecognition(for: nil) { result in
                 Task { @MainActor in
+                    guard shouldProcessContinuousRecognitionResult() else {
+                        return
+                    }
                     recognitionResult = result
                     addToHistory(from: result)
                 }
@@ -243,6 +251,7 @@ struct DiscoverView: View {
                 await toggleContinuousRecognition()
             }
         }
+        await resetContinuousRecognitionCooldown()
         continuousStopTask?.cancel()
         continuousStopTask = Task {
             do {
@@ -261,6 +270,9 @@ struct DiscoverView: View {
         do {
             try await recognizer.startContinuousRecognition(for: duration) { result in
                 Task { @MainActor in
+                    guard shouldProcessContinuousRecognitionResult() else {
+                        return
+                    }
                     recognitionResult = result
                     addToHistory(from: result)
                 }
@@ -356,6 +368,42 @@ struct DiscoverView: View {
             recognizedHistory: [recognizedDate]
         )
         modelContext.insert(track)
+    }
+
+    @MainActor
+    private func shouldProcessContinuousRecognitionResult() -> Bool {
+        guard !isContinuousRecognitionOnCooldown else {
+            return false
+        }
+        startContinuousRecognitionCooldown()
+        return true
+    }
+
+    @MainActor
+    private func startContinuousRecognitionCooldown() {
+        continuousRecognitionCooldownTask?.cancel()
+        isContinuousRecognitionOnCooldown = true
+        let cooldownNanos = UInt64(continuousRecognitionCooldown * 1_000_000_000)
+        continuousRecognitionCooldownTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: cooldownNanos)
+            } catch is CancellationError {
+                // fall through to reset state
+            } catch {
+                print("Discover continuous recognition cooldown failed: \(error)")
+            }
+            await MainActor.run {
+                isContinuousRecognitionOnCooldown = false
+                continuousRecognitionCooldownTask = nil
+            }
+        }
+    }
+
+    @MainActor
+    private func resetContinuousRecognitionCooldown() {
+        continuousRecognitionCooldownTask?.cancel()
+        continuousRecognitionCooldownTask = nil
+        isContinuousRecognitionOnCooldown = false
     }
 }
 
