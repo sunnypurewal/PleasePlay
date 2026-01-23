@@ -330,6 +330,7 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustPlayIt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sonnio;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to your music library to play songs.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for voice commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "JustPlayIt needs speech recognition to understand your voice commands.";
@@ -387,6 +388,7 @@
 				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = JustPlayIt/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Sonnio;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "We need access to your music library to play songs.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for voice commands.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "JustPlayIt needs speech recognition to understand your voice commands.";

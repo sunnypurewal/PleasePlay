@@ -33,16 +33,19 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Test a token classification model.")
     parser.add_argument("text", type=str, nargs='?', default=None, help="Text to classify. If not provided, runs in interactive mode.")
+    parser.add_argument("--model", type=str, default="./model", help="Path to the model directory (default: ./model)")
     args = parser.parse_args()
 
+    model_path = args.model
+
     try:
-        print(f"Loading tokenizer and model from {MODEL_PATH}...")
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-        model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+        print(f"Loading tokenizer and model from {model_path}...")
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
+        model = AutoModelForTokenClassification.from_pretrained(model_path)
         print("✅ Model and tokenizer loaded successfully.")
     except Exception as e:
         print(f"❌ Failed to load model or tokenizer: {e}")
-        print("Please make sure that the 'bert/model' directory contains a valid Hugging Face token classification model.")
+        print(f"Please make sure that the '{model_path}' directory contains a valid Hugging Face token classification model.")
         return
 
     # Check if the model has a label mapping in its config

@@ -152,6 +152,7 @@ public actor Predictor {
 		}
 		
 		// Flush last
+		print(currentTokens)
 		if let type = currentLabelType, !currentTokens.isEmpty {
 			let str = tokenizer.decode(tokens: currentTokens)
 			if type == "Artist" { extractedArtists.append(str) }

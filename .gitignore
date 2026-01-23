@@ -7,9 +7,9 @@ venv/
 env/
 *.p8
 ios_tokenizer/
-model/
+model*/
 *.mlpackage/
-results/
+results*/
 models/
 s3/
 bootstrap

@@ -3,17 +3,22 @@ import numpy
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 import coremltools as ct
 from pathlib import Path
+import argparse
 
 def main():
     """
     Converts a fine-tuned Hugging Face token classification model to a Core ML package.
     """
-    model_path = Path("./model")
+    parser = argparse.ArgumentParser(description="Convert a Hugging Face model to Core ML.")
+    parser.add_argument("--model", type=str, default="./model", help="Path to the model directory (default: ./model)")
+    args = parser.parse_args()
+
+    model_path = Path(args.model)
     output_path = Path("./MusicNER.mlpackage")
     
     if not model_path.exists():
         print(f"❌ Error: Model directory not found at '{model_path}'.")
-        print("Please make sure you have a fine-tuned model saved in the './model' directory.")
+        print(f"Please make sure you have a fine-tuned model saved in the '{model_path}' directory.")
         return
 
     print(f"Loading tokenizer and model from '{model_path}'...")
