@@ -124,6 +124,7 @@ private extension HistoryView {
 private struct HistoryRow: View {
     @Environment(MusicPlayer.self) private var musicPlayer
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var authManager: AuthorizationManager
     let song: PlayedTrack
     @State private var heartPulse = false
     @State private var isRowPressed = false
@@ -140,7 +141,24 @@ private struct HistoryRow: View {
 		(musicPlayer.isPlaying || musicPlayer.isSeeking) && (musicPlayer.currentTrack?.serviceIDs.contains(song) ?? false)
     }
 
+    @ViewBuilder
     var body: some View {
+        if authManager.isAuthorized {
+            rowContent
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        addToPlaylist()
+                    } label: {
+                        Label("Add to Playlist", systemImage: "text.badge.plus")
+                    }
+                    .tint(.accentColor)
+                }
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
         HStack(alignment: .center, spacing: 12) {
             if isCurrentSong {
                 Image(systemName: "speaker.wave.3.fill")
@@ -212,17 +230,9 @@ private struct HistoryRow: View {
             Button {
                 clearPlays()
             } label: {
-                Label("Clear Plays", systemImage: "play.slash")
+                Label("Clear Plays", systemImage: "play/slash")
             }
             .tint(.orange)
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button {
-                addToPlaylist()
-            } label: {
-                Label("Add to Playlist", systemImage: "text.badge.plus")
-            }
-            .tint(.accentColor)
         }
     }
 
@@ -354,6 +364,7 @@ struct HistoryView_Previews: PreviewProvider {
             PlayedTrack(title: "Blinding Lights", artist: "The Weeknd", album: "After Hours", artworkURL: nil, duration: 200)
         ])
         .environment(MusicPlayer())
+        .environmentObject(AuthorizationManager())
     }
 }
 #endif

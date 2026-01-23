@@ -14,12 +14,6 @@ struct AuthenticationView: View {
 	var body: some View {
 		VStack(spacing: 20) {
 			Spacer()
-			
-			Text("please play")
-				.font(.largeTitle)
-				.fontWeight(.bold)
-				.padding(.bottom, 40)
-			
 			// Apple Music
 			Button(action: {
 				Task {
