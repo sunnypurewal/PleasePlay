@@ -56,12 +56,12 @@ struct HomeView: View {
                             .foregroundColor(.secondary)
 
                         VStack(spacing: 4) {
-                            Text("\"**Please play** \(songVoiceCommandSuggestion)\"")
+                            Text("\"*Please play* \(songVoiceCommandSuggestion)\"")
                                 .font(.title3)
                                 .foregroundColor(.secondary)
                         }
                         VStack(spacing: 4) {
-                            Text("\"**Please play** \(artistVoiceCommandSuggestion)\"")
+                            Text("\"*Please play* \(artistVoiceCommandSuggestion)\"")
                                 .font(.title3)
                                 .foregroundColor(.secondary)
                         }
