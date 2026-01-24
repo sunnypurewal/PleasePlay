@@ -21,7 +21,7 @@ struct HomeView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var microphonePermissionGranted = false
-    @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = false
+    @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = true
     @State private var predictor = Predictor()
     @State private var searchResults: [Track] = []
     @State private var isSearching = false

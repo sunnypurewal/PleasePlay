@@ -30,8 +30,7 @@ struct MiniPlayerView: View {
 	}
 
 	private var miniPlayerContent: some View {
-		VStack(alignment: .leading, spacing: 6) {
-
+		VStack(alignment: .center, spacing: 6) {
 			HStack(alignment: .center, spacing: 12) {
 				if let artworkURL = currentSong.artworkURL {
 					AsyncImage(url: artworkURL) { image in
@@ -87,13 +86,6 @@ struct MiniPlayerView: View {
 				.foregroundColor(.primary)
 			}
 			.padding(.horizontal, 8)
-
-			ProgressView(value: currentSong.duration > 0 ? musicPlayer.currentPlaybackTime : 0, total: currentSong.duration)
-				.progressViewStyle(.linear)
-				.tint(Color.accentColor.opacity(0.9))
-				.frame(height: 2)
-				.padding(.horizontal, 8)
-				.opacity(currentSong.duration == 0 ? 0 : 1)
 		}
 	}
 }
