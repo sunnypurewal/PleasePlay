@@ -21,7 +21,7 @@ public struct StreamingServiceIDs: Codable, Hashable {
 }
 
 /// Represents a music track with basic metadata.
-public struct Track {
+public struct Track: Equatable {
 	public var title: String
 	public var artist: String
 	public var album: String
@@ -40,6 +40,16 @@ public struct Track {
 		self.previewURL = previewURL
 		self.duration = duration
 		self.serviceIDs = serviceIDs
+	}
+
+	public static func == (lhs: Track, rhs: Track) -> Bool {
+		return lhs.title == rhs.title
+			&& lhs.artist == rhs.artist
+			&& lhs.album == rhs.album
+			&& lhs.artworkURL == rhs.artworkURL
+			&& lhs.previewURL == rhs.previewURL
+			&& lhs.duration == rhs.duration
+			&& lhs.serviceIDs == rhs.serviceIDs
 	}
 }
 
@@ -171,7 +181,13 @@ public class MusicPlayer {
 	}
 
 	private func refreshCurrentTrackIfNeeded() {
-		currentTrack = activeProvider?.currentTrack
+		if let providerTrack = activeProvider?.currentTrack {
+			if currentTrack != providerTrack {
+				currentTrack = providerTrack
+			}
+		} else if currentTrack != nil {
+			currentTrack = nil
+		}
 	}
 
 	private var providerPlaybackMonitorTask: Task<Void, Never>?
