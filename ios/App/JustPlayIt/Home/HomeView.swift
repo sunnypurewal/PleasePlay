@@ -25,7 +25,6 @@ struct HomeView: View {
     @State private var predictor = Predictor()
     @State private var searchResults: [Track] = []
     @State private var suggestions: [Track] = []
-    @State private var discography: [Album] = []
     @State private var isSearching = false
     @State private var hasAppeared = false
     @State private var hasStartedInitialListening = false
@@ -65,10 +64,6 @@ struct HomeView: View {
                             if !suggestions.isEmpty {
                                 suggestionsSection
                             }
-                            
-                            if !discography.isEmpty {
-                                discographySection
-                            }
                         }
                         
                         if (playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced) || (!musicPlayer.isPlaying && !musicPlayer.isSeeking) {
@@ -99,13 +94,13 @@ struct HomeView: View {
             hasAppeared = true
             startInitialListeningIfNeeded()
             refreshVoiceCommandSuggestion()
-            refreshHomeData()
+            refreshSuggestions()
         }
         .onChange(of: playedTracks) { _, _ in
             refreshVoiceCommandSuggestion()
         }
         .onChange(of: musicPlayer.currentTrack?.serviceIDs) { _, _ in
-            refreshHomeData()
+            refreshSuggestions()
         }
         .onChange(of: recognitionState.speechTranscriber.finalizedTranscript) { old, new in
             let transcript = String(new.characters)
@@ -530,64 +525,11 @@ struct HomeView: View {
         }
     }
 
-    private var discographySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Discography")
-                .font(.headline)
-                .padding(.horizontal)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(discography, id: \.serviceIDs) { album in
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let url = album.artworkURL {
-                                AsyncImage(url: url) { image in
-                                    image.resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Color.gray
-                                }
-                                .frame(width: 120, height: 120)
-                                .cornerRadius(8)
-                                .clipped()
-                            } else {
-                                Rectangle()
-                                    .fill(Color.secondary.opacity(0.1))
-                                    .frame(width: 120, height: 120)
-                                    .cornerRadius(8)
-                                    .overlay(Image(systemName: "music.quarternote").font(.title))
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(album.title)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .lineLimit(1)
-                                if let releaseDate = album.releaseDate {
-                                    Text(releaseDate, format: .dateTime.year())
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        .frame(width: 120)
-                    }
-                }
-                .padding(.horizontal)
-            }
-        }
-    }
-
     private var suggestionsTitle: String {
         if let current = musicPlayer.currentTrack {
             return "More by \(current.artist)"
         }
         return "You Might Like"
-    }
-
-    private func refreshHomeData() {
-        refreshSuggestions()
-        refreshDiscography()
     }
 
     private func refreshSuggestions() {
@@ -620,44 +562,6 @@ struct HomeView: View {
         }
     }
 
-    private func refreshDiscography() {
-        guard let current = musicPlayer.currentTrack else {
-            if let topArtist = playedTracks.first?.artist {
-                fetchDiscography(for: topArtist)
-            }
-            return
-        }
-        fetchDiscography(for: current.artist)
-    }
-
-    private func fetchDiscography(for artist: String) {
-        Task {
-            do {
-                let albums = try await musicPlayer.getAlbums(for: artist)
-                await MainActor.run {
-                    // Deduplicate by title, preferring explicit versions
-                    var uniqueAlbums: [String: Album] = [:]
-                    for album in albums {
-                        let titleKey = album.title.lowercased().trimmingCharacters(in: .whitespaces)
-                        if let existing = uniqueAlbums[titleKey] {
-                            if album.isExplicit && !existing.isExplicit {
-                                uniqueAlbums[titleKey] = album
-                            }
-                        } else {
-                            uniqueAlbums[titleKey] = album
-                        }
-                    }
-                    
-                    // Sort by release date descending
-                    self.discography = uniqueAlbums.values.sorted { 
-                        ($0.releaseDate ?? .distantPast) > ($1.releaseDate ?? .distantPast)
-                    }
-                }
-            } catch {
-                print("Failed to fetch discography: \(error)")
-            }
-        }
-    }
 }
 
 #Preview {

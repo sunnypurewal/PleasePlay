@@ -127,10 +127,6 @@ public class Unauthorized: StreamingMusicProvider {
 		return try await search(query: artist)
 	}
 
-	public func getAlbums(for artist: String) async throws -> [Album] {
-		return []
-	}
-
 	public func pause() {
 		player.pause()
 		isPlaying = false

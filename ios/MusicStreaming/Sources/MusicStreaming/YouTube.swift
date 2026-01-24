@@ -31,7 +31,7 @@ public class YouTube: StreamingMusicProvider {
         isPlaying = true
         return track
     }
-    
+
     public func search(query: String) async throws -> [Track] {
         return []
     }
@@ -40,10 +40,6 @@ public class YouTube: StreamingMusicProvider {
         return []
     }
 
-    public func getAlbums(for artist: String) async throws -> [Album] {
-        return []
-    }
-    
     public func pause() {
     }
     

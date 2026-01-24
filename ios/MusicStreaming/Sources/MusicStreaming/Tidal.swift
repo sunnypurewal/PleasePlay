@@ -109,10 +109,6 @@ public class Tidal: StreamingMusicProvider {
         return []
     }
 
-    public func getAlbums(for artist: String) async throws -> [Album] {
-        return []
-    }
-	    
 	        
 	    
 	        public func pause() {        player?.pause()
