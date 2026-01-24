@@ -39,7 +39,8 @@
 
     <!-- Navigation -->
     <nav class="container mx-auto px-6 py-10 flex justify-between items-center">
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-3">
+            <img src="sonnio-logo.png" alt="Sonnio Logo" class="w-12 h-12 rounded-xl shadow-lg shadow-indigo-100">
             <span class="text-4xl md:text-5xl font-black text-indigo-600 tracking-tighter">sonnio</span>
             <div class="bg-indigo-600 w-3 h-3 rounded-full mt-4"></div>
         </div>
@@ -48,27 +49,27 @@
 
     <!-- Hero Section -->
     <section class="container mx-auto px-6 pt-12 pb-24 text-center">
-        <div class="inline-block bg-white border-2 border-indigo-100 px-6 py-2 rounded-full text-indigo-600 font-bold mb-8 shadow-sm">
+        <div id="dynamic-banner" class="inline-block bg-white border-2 border-indigo-100 px-6 py-2 rounded-full text-indigo-600 font-bold mb-8 shadow-sm opacity-0 transition-opacity duration-500">
             🚀 Way easier than borrowing your parents' phone!
         </div>
         
-        <h1 class="text-7xl md:text-[10rem] font-black leading-[0.85] mb-12 tracking-tighter">
+        <h1 class="text-7xl md:text-[10rem] font-black leading-[0.85] mb-12 tracking-tighter uppercase">
             JUST SAY IT. <br/>
             <span class="text-indigo-600">PLAY IT.</span>
         </h1>
 
         <div class="relative max-w-lg mx-auto mb-16">
-            <div class="floating bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border-4 border-indigo-50 transform -rotate-2">
+            <div class="floating bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border-4 border-indigo-50 transform -rotate-2 relative z-10">
                 <div class="flex items-center justify-center space-x-4">
                     <div class="bg-indigo-600 p-3 rounded-2xl">
                         <i data-lucide="mic" class="text-white w-8 h-8"></i>
                     </div>
-                    <p class="text-2xl md:text-3xl font-extrabold italic text-slate-800">"Please play The Beatles"</p>
+                    <p id="voice-command-1" class="text-2xl md:text-3xl font-extrabold italic text-slate-800 transition-all duration-500">"Please play The Beatles"</p>
                 </div>
             </div>
-            <!-- Smaller secondary bubble -->
-            <div class="hidden md:block absolute -right-32 top-10 bg-pink-50 p-4 rounded-3xl shadow-xl border-2 border-pink-100 rotate-12">
-                <p class="text-lg font-bold text-pink-600">"Please play Metallica!"</p>
+            <!-- Smaller secondary bubble - moved further right and up to avoid overlap -->
+            <div class="hidden lg:block absolute -right-48 -top-8 bg-pink-50 p-4 rounded-3xl shadow-xl border-2 border-pink-100 rotate-12 z-0">
+                <p id="voice-command-2" class="text-lg font-bold text-pink-600 transition-all duration-500">"Please play Metallica!"</p>
             </div>
         </div>
 
@@ -77,12 +78,8 @@
         </p>
 
         <div class="flex flex-col items-center space-y-6">
-            <a href="#" class="bg-black text-white px-10 py-5 rounded-[2rem] flex items-center space-x-4 hover:scale-105 transition transform duration-200 shadow-2xl">
-                <i data-lucide="apple" class="w-10 h-10"></i>
-                <div class="text-left">
-                    <p class="text-xs uppercase font-bold opacity-70 leading-none">Download on the</p>
-                    <p class="text-2xl font-bold leading-none">App Store</p>
-                </div>
+            <a href="#" class="hover:scale-105 transition transform duration-200">
+                <img src="app-store.svg" alt="Download on the App Store" class="h-[72px]">
             </a>
             <div class="flex items-center space-x-3 text-slate-500 font-bold">
                 <i data-lucide="check-circle-2" class="text-green-500 w-5 h-5"></i>
@@ -156,6 +153,77 @@
 
     <script>
         lucide.createIcons();
+
+        // Dynamic Banner Messages
+        const messages = [
+            "🚀 Way easier than borrowing your parents' phone!",
+            "🎸 Finally, a music app just for you!",
+            "🤫 Stop asking Mom for her phone!",
+            "✨ Just your voice, your music, your way.",
+            "🎧 Your favorite songs are just a 'Please' away.",
+            "📱 iPad ready. Kid approved. Parent loved.",
+            "🎵 Discovery made simple for the next generation."
+        ];
+
+        const banner = document.getElementById('dynamic-banner');
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        banner.textContent = randomMessage;
+        banner.classList.remove('opacity-0');
+
+        // Voice Command Cycling
+        const commands1 = [
+            "\"Please play The Beatles\"",
+            "\"Please play Taylor Swift\"",
+            "\"Please play Imagine Dragons\"",
+            "\"Please play Queen\"",
+            "\"Please play Dua Lipa\""
+        ];
+        
+        const commands2 = [
+            "\"Please play Metallica!\"",
+            "\"Please play Master of Puppets\"",
+            "\"Please play Billie Eilish\"",
+            "\"Please play Ed Sheeran\"",
+            "\"Please play AC/DC\""
+        ];
+
+        let idx1 = Math.floor(Math.random() * commands1.length);
+        let idx2 = Math.floor(Math.random() * commands2.length);
+
+        // Set initial random content
+        document.getElementById('voice-command-1').textContent = commands1[idx1];
+        document.getElementById('voice-command-2').textContent = commands2[idx2];
+
+        function cycleCommands() {
+            const el1 = document.getElementById('voice-command-1');
+            const el2 = document.getElementById('voice-command-2');
+            
+            // Cycle first bubble
+            idx1 = (idx1 + 1) % commands1.length;
+            el1.style.opacity = 0;
+            el1.style.transform = "translateY(10px)";
+            
+            setTimeout(() => {
+                el1.textContent = commands1[idx1];
+                el1.style.opacity = 1;
+                el1.style.transform = "translateY(0)";
+            }, 500);
+
+            // Cycle second bubble slightly offset
+            setTimeout(() => {
+                idx2 = (idx2 + 1) % commands2.length;
+                el2.style.opacity = 0;
+                el2.style.transform = "translateY(10px)";
+                
+                setTimeout(() => {
+                    el2.textContent = commands2[idx2];
+                    el2.style.opacity = 1;
+                    el2.style.transform = "translateY(0)";
+                }, 500);
+            }, 1500);
+        }
+
+        setInterval(cycleCommands, 5000);
     </script>
 </body>
 </html>
