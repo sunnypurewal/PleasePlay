@@ -25,6 +25,7 @@ struct HomeView: View {
     @State private var predictor = Predictor()
     @State private var searchResults: [Track] = []
     @State private var suggestions: [Track] = []
+    @State private var discography: [Album] = []
     @State private var isSearching = false
     @State private var hasAppeared = false
     @State private var hasStartedInitialListening = false
@@ -50,30 +51,7 @@ struct HomeView: View {
                         toggleListening: { await toggleMicrophoneListening() },
                         onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
                     )
-                    if recognitionState.isMicrophoneStreaming {
-                        VStack(spacing: 12) {
-                            Text("All commands start with \"Please play\"")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-
-                            VStack(spacing: 4) {
-                                Text("\"*Please play* \(songVoiceCommandSuggestion)\"")
-                                    .font(.title3)
-                                    .foregroundColor(.secondary)
-                            }
-                            VStack(spacing: 4) {
-                                Text("\"*Please play* \(artistVoiceCommandSuggestion)\"")
-                                    .font(.title3)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .onAppear {
-                            refreshVoiceCommandSuggestion()
-                        }
-                    }
-                } else if !isSearching && searchResults.isEmpty {
+                } else if !isSearching {
                     nowPlayingHighlight
                 }
                 
@@ -81,27 +59,27 @@ struct HomeView: View {
                 if isSearching {
                     ProgressView("Searching...")
                         .padding(.top, 40)
-                } else if !searchResults.isEmpty {
-                    searchResultsList
                 } else {
                     VStack(spacing: 32) {
-                        if !suggestions.isEmpty {
-                            suggestionsSection
+                        if musicPlayer.isPlaying || musicPlayer.isSeeking {
+                            if !suggestions.isEmpty {
+                                suggestionsSection
+                            }
+                            
+                            if !discography.isEmpty {
+                                discographySection
+                            }
                         }
                         
-                        if !playedTracks.isEmpty {
-                            recentlyPlayedSection
-                        }
-                        
-                        if playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced {
+                        if (playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced) || (!musicPlayer.isPlaying && !musicPlayer.isSeeking) {
                             VStack(spacing: 20) {
                                 Image(systemName: "music.note.house")
                                     .font(.system(size: 60))
                                     .foregroundColor(.secondary)
-                                Text("Welcome to JustPlayIt")
+                                Text("Welcome to Sonnio")
                                     .font(.title2)
                                     .bold()
-                                Text("Try saying \"Please play Hey Jude\" to get started.")
+                                Text("Try saying \"Please play \(songVoiceCommandSuggestion)\" to get started.")
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal)
@@ -121,13 +99,13 @@ struct HomeView: View {
             hasAppeared = true
             startInitialListeningIfNeeded()
             refreshVoiceCommandSuggestion()
-            refreshSuggestions()
+            refreshHomeData()
         }
         .onChange(of: playedTracks) { _, _ in
             refreshVoiceCommandSuggestion()
         }
         .onChange(of: musicPlayer.currentTrack?.serviceIDs) { _, _ in
-            refreshSuggestions()
+            refreshHomeData()
         }
         .onChange(of: recognitionState.speechTranscriber.finalizedTranscript) { old, new in
             let transcript = String(new.characters)
@@ -475,15 +453,6 @@ struct HomeView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
-                            
-                            HStack(spacing: 4) {
-                                Image(systemName: "speaker.wave.3.fill")
-                                    .font(.caption)
-                                Text("Playing on \(musicPlayer.providerName)")
-                                    .font(.caption)
-                            }
-                            .foregroundColor(.accentColor)
-                            .padding(.top, 4)
                         }
                         Spacer()
                     }
@@ -493,82 +462,6 @@ struct HomeView: View {
                     .padding(.horizontal)
                 }
             }
-        }
-    }
-
-    private var searchResultsList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(resultsListTitle)
-                .font(.headline)
-                .padding(.horizontal)
-            
-            VStack(spacing: 0) {
-                ForEach(searchResults, id: \.serviceIDs) { track in
-                    Button(action: {
-                        Task {
-                            await cancelRecognitionBeforePlayback()
-                            do {
-                                try await musicPlayer.play(track: track)
-                            } catch {
-                                print("Failed to play selected track: \(error)")
-                            }
-                            await MainActor.run {
-                                saveTrack(track)
-                            }
-                        }
-                    }) {
-                        HStack(spacing: 12) {
-                            if let url = track.artworkURL {
-                                AsyncImage(url: url) { image in
-                                    image.resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                } placeholder: {
-                                    Color.gray
-                                }
-                                .frame(width: 50, height: 50)
-                                .cornerRadius(4)
-                                .clipped()
-                            } else {
-                                Image(systemName: "music.note")
-                                    .frame(width: 50, height: 50)
-                                    .background(Color.secondary.opacity(0.1))
-                                    .cornerRadius(4)
-                            }
-                            
-                            VStack(alignment: .leading) {
-                                Text(track.title)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                    .lineLimit(1)
-                                Text(track.artist)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(1)
-                            }
-                            
-                            Spacer()
-                            
-                            if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
-                                Image(systemName: "speaker.wave.3.fill")
-                                    .foregroundColor(.accentColor)
-                                    .font(.caption)
-                            }
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    
-                    if track.serviceIDs != searchResults.last?.serviceIDs {
-                        Divider()
-                            .padding(.leading, 74)
-                    }
-                }
-            }
-            .background(Color.secondary.opacity(0.05))
-            .cornerRadius(12)
-            .padding(.horizontal)
         }
     }
 
@@ -637,62 +530,47 @@ struct HomeView: View {
         }
     }
 
-    private var recentlyPlayedSection: some View {
+    private var discographySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Recently Played")
+            Text("Discography")
                 .font(.headline)
                 .padding(.horizontal)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(playedTracks.prefix(15)) { playedTrack in
-                        Button(action: {
-                            let track = Track(playedTrack: playedTrack)
-                            Task {
-                                await cancelRecognitionBeforePlayback()
-                                do {
-                                    try await musicPlayer.play(track: track)
-                                } catch {
-                                    print("Failed to play recently played track: \(error)")
+                    ForEach(discography, id: \.serviceIDs) { album in
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let url = album.artworkURL {
+                                AsyncImage(url: url) { image in
+                                    image.resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Color.gray
                                 }
-                                await MainActor.run {
-                                    saveTrack(track)
-                                }
-                            }
-                        }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                if let url = playedTrack.artworkURL {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                    } placeholder: {
-                                        Color.gray
-                                    }
-                                    .frame(width: 110, height: 110)
+                                .frame(width: 120, height: 120)
+                                .cornerRadius(8)
+                                .clipped()
+                            } else {
+                                Rectangle()
+                                    .fill(Color.secondary.opacity(0.1))
+                                    .frame(width: 120, height: 120)
                                     .cornerRadius(8)
-                                    .clipped()
-                                } else {
-                                    Rectangle()
-                                        .fill(Color.secondary.opacity(0.1))
-                                        .frame(width: 110, height: 110)
-                                        .cornerRadius(8)
-                                        .overlay(Image(systemName: "music.note"))
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(playedTrack.title)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                        .lineLimit(1)
-                                    Text(playedTrack.artist)
+                                    .overlay(Image(systemName: "music.quarternote").font(.title))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(album.title)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                                if let releaseDate = album.releaseDate {
+                                    Text(releaseDate, format: .dateTime.year())
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
-                                        .lineLimit(1)
                                 }
                             }
-                            .frame(width: 110)
                         }
-                        .buttonStyle(.plain)
+                        .frame(width: 120)
                     }
                 }
                 .padding(.horizontal)
@@ -705,6 +583,11 @@ struct HomeView: View {
             return "More by \(current.artist)"
         }
         return "You Might Like"
+    }
+
+    private func refreshHomeData() {
+        refreshSuggestions()
+        refreshDiscography()
     }
 
     private func refreshSuggestions() {
@@ -721,7 +604,7 @@ struct HomeView: View {
     private func fetchSuggestions(for artist: String) {
         Task {
             do {
-                let results = try await musicPlayer.search(query: artist)
+                let results = try await musicPlayer.getTopSongs(for: artist)
                 await MainActor.run {
                     // Filter out current track if possible
                     self.suggestions = results.filter { track in
@@ -733,6 +616,45 @@ struct HomeView: View {
                 }
             } catch {
                 print("Failed to fetch suggestions: \(error)")
+            }
+        }
+    }
+
+    private func refreshDiscography() {
+        guard let current = musicPlayer.currentTrack else {
+            if let topArtist = playedTracks.first?.artist {
+                fetchDiscography(for: topArtist)
+            }
+            return
+        }
+        fetchDiscography(for: current.artist)
+    }
+
+    private func fetchDiscography(for artist: String) {
+        Task {
+            do {
+                let albums = try await musicPlayer.getAlbums(for: artist)
+                await MainActor.run {
+                    // Deduplicate by title, preferring explicit versions
+                    var uniqueAlbums: [String: Album] = [:]
+                    for album in albums {
+                        let titleKey = album.title.lowercased().trimmingCharacters(in: .whitespaces)
+                        if let existing = uniqueAlbums[titleKey] {
+                            if album.isExplicit && !existing.isExplicit {
+                                uniqueAlbums[titleKey] = album
+                            }
+                        } else {
+                            uniqueAlbums[titleKey] = album
+                        }
+                    }
+                    
+                    // Sort by release date descending
+                    self.discography = uniqueAlbums.values.sorted { 
+                        ($0.releaseDate ?? .distantPast) > ($1.releaseDate ?? .distantPast)
+                    }
+                }
+            } catch {
+                print("Failed to fetch discography: \(error)")
             }
         }
     }

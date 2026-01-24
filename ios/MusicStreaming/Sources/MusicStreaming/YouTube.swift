@@ -35,6 +35,14 @@ public class YouTube: StreamingMusicProvider {
     public func search(query: String) async throws -> [Track] {
         return []
     }
+
+    public func getTopSongs(for artist: String) async throws -> [Track] {
+        return []
+    }
+
+    public func getAlbums(for artist: String) async throws -> [Album] {
+        return []
+    }
     
     public func pause() {
     }

@@ -21,7 +21,7 @@ public struct StreamingServiceIDs: Codable, Hashable {
 }
 
 /// Represents a music track with basic metadata.
-public class Track {
+public struct Track {
 	public var title: String
 	public var artist: String
 	public var album: String
@@ -43,6 +43,24 @@ public class Track {
 	}
 }
 
+public struct Album: Codable, Hashable {
+	public var title: String
+	public var artist: String
+	public var artworkURL: URL?
+	public var releaseDate: Date?
+	public var isExplicit: Bool
+	public var serviceIDs: StreamingServiceIDs
+	
+	public init(title: String, artist: String, artworkURL: URL? = nil, releaseDate: Date? = nil, isExplicit: Bool = false, serviceIDs: StreamingServiceIDs = .init()) {
+		self.title = title
+		self.artist = artist
+		self.artworkURL = artworkURL
+		self.releaseDate = releaseDate
+		self.isExplicit = isExplicit
+		self.serviceIDs = serviceIDs
+	}
+}
+
 /// A generic interface for interacting with different streaming music providers
 /// (e.g., Apple Music, Spotify, Tidal).
 @MainActor
@@ -56,6 +74,8 @@ public protocol StreamingMusicProvider {
 	func play(track: Track) async throws -> Track
 	
 	func search(query: String) async throws -> [Track]
+	func getTopSongs(for artist: String) async throws -> [Track]
+	func getAlbums(for artist: String) async throws -> [Album]
 	
 	func pause()
 	var isPlaying: Bool { get }
@@ -119,6 +139,14 @@ public class MusicPlayer {
 	
 	public func search(query: String) async throws -> [Track] {
 		return try await provider.search(query: query)
+	}
+
+	public func getTopSongs(for artist: String) async throws -> [Track] {
+		return try await provider.getTopSongs(for: artist)
+	}
+	
+	public func getAlbums(for artist: String) async throws -> [Album] {
+		return try await provider.getAlbums(for: artist)
 	}
 	
 	public func pause() {

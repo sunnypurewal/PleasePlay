@@ -104,6 +104,14 @@ public class Tidal: StreamingMusicProvider {
         // Skipping implementation for now
         return []
     }
+
+    public func getTopSongs(for artist: String) async throws -> [Track] {
+        return []
+    }
+
+    public func getAlbums(for artist: String) async throws -> [Album] {
+        return []
+    }
 	    
 	        
 	    

@@ -106,6 +106,73 @@ public class AppleMusic: StreamingMusicProvider {
             )
         }
     }
+
+    public func getTopSongs(for artist: String) async throws -> [Track] {
+        let searchRequest = MusicCatalogSearchRequest(term: artist, types: [Artist.self])
+        let response = try await searchRequest.response()
+        
+        guard let artistItem = response.artists.first else {
+            return []
+        }
+        
+        // Use the key-path overload so we get a concrete Artist back.
+		let artistWithSongs = try await artistItem.with([.topSongs])
+        // Depending on SDK, `songs` may be optional. Handle both safely.
+        let songsCollection: MusicItemCollection<Song>
+		if let optionalSongs = (artistWithSongs.topSongs as Any?) as? MusicItemCollection<Song>? {
+            guard let unwrapped = optionalSongs else { return [] }
+            songsCollection = unwrapped
+        } else {
+            songsCollection = artistWithSongs.topSongs ?? []
+        }
+        
+        return songsCollection.map { songItem in
+            Track(
+                title: songItem.title,
+                artist: songItem.artistName,
+                album: songItem.albumTitle ?? "",
+                artworkURL: songItem.artwork?.url(width: 300, height: 300),
+                duration: songItem.duration ?? 0,
+                serviceIDs: .init(appleMusic: songItem.id.rawValue)
+            )
+        }
+    }
+
+    public func getAlbums(for artist: String) async throws -> [Album] {
+        let searchRequest = MusicCatalogSearchRequest(term: artist, types: [Artist.self])
+        let response = try await searchRequest.response()
+        
+        guard let artistItem = response.artists.first else {
+            return []
+        }
+        
+        // Use key-path overload for albums as well.
+        let artistWithAlbums = try await artistItem.with([.albums])
+        // Handle optional vs non-optional relationship across SDKs.
+		let albumsCollection: MusicItemCollection<MusicKit.Album>
+		if let optionalAlbums = (artistWithAlbums.albums as Any?) as? MusicItemCollection<MusicKit.Album>? {
+            guard let unwrapped = optionalAlbums else { return [] }
+            albumsCollection = unwrapped
+        } else {
+            albumsCollection = artistWithAlbums.fullAlbums ?? []
+        }
+        
+        return albumsCollection.compactMap { album in
+            let title = album.title.lowercased()
+            if title.contains(" - single") || title.contains(" - ep") || title.contains("(single)") || title.contains("(ep)") {
+                return nil
+            }
+            
+            return Album(
+                title: album.title,
+                artist: album.artistName,
+                artworkURL: album.artwork?.url(width: 300, height: 300),
+                releaseDate: album.releaseDate,
+                isExplicit: album.contentRating == .explicit,
+                serviceIDs: .init(appleMusic: album.id.rawValue)
+            )
+        }
+    }
 	
 	public func pause() {
 		player.pause()

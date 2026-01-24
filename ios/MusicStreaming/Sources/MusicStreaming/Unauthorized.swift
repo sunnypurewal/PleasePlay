@@ -123,6 +123,14 @@ public class Unauthorized: StreamingMusicProvider {
 		return payload.map { $0.asTrack }
 	}
 
+	public func getTopSongs(for artist: String) async throws -> [Track] {
+		return try await search(query: artist)
+	}
+
+	public func getAlbums(for artist: String) async throws -> [Album] {
+		return []
+	}
+
 	public func pause() {
 		player.pause()
 		isPlaying = false
