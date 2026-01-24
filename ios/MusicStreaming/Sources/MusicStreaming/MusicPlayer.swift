@@ -47,6 +47,7 @@ public class Track {
 /// (e.g., Apple Music, Spotify, Tidal).
 @MainActor
 public protocol StreamingMusicProvider {
+	var name: String { get }
 	/// Plays a specific track by artist and song name.
 	@discardableResult
 	func play(artist: String, song: String) async throws -> Track
@@ -83,6 +84,9 @@ public class MusicPlayer {
 	}
 	public var onIsPlayingChange: ((Bool) -> Void)?
 	
+	public var providerName: String {
+		activeProvider?.name ?? "None"
+	}
 	
 	public init(provider: StreamingMusicProvider = Unauthorized()) {
 		self.provider = provider

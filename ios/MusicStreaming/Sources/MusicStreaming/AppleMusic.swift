@@ -12,6 +12,7 @@ import Observation
 @MainActor
 @Observable
 public class AppleMusic: StreamingMusicProvider {
+    public let name: String = "Apple Music"
     private let player = ApplicationMusicPlayer.shared
     public var isPlaying: Bool = false
     public var currentTrack: Track?

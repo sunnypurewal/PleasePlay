@@ -24,6 +24,7 @@ struct HomeView: View {
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = true
     @State private var predictor = Predictor()
     @State private var searchResults: [Track] = []
+    @State private var suggestions: [Track] = []
     @State private var isSearching = false
     @State private var hasAppeared = false
     @State private var hasStartedInitialListening = false
@@ -35,108 +36,84 @@ struct HomeView: View {
     @State private var playbackDebounceTask: Task<Void, Never>?
 
     var body: some View {
-        VStack {
-            // Microphone Permission Banner
-            if !microphonePermissionGranted {
-                MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
-            }
-            
-            if !isPlayingDebounced && !musicPlayer.isSeeking {
-                MicrophoneStatusView(
-                    isListening: recognitionState.isMicrophoneStreaming,
-                    isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
-                    toggleListening: { await toggleMicrophoneListening() },
-                    onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
-                )
-                if recognitionState.isMicrophoneStreaming {
-                    VStack(spacing: 12) {
-                        Text("All commands start with \"Please play\"")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-
-                        VStack(spacing: 4) {
-                            Text("\"*Please play* \(songVoiceCommandSuggestion)\"")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                        }
-                        VStack(spacing: 4) {
-                            Text("\"*Please play* \(artistVoiceCommandSuggestion)\"")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                    .onAppear {
-                        refreshVoiceCommandSuggestion()
-                    }
+        ScrollView {
+            VStack(spacing: 24) {
+                // Microphone Permission Banner
+                if !microphonePermissionGranted {
+                    MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
                 }
-                Spacer()
-            }
-            
-            Spacer()
-            
-            // Content for Empty State vs Now Playing
-            if isSearching {
-                ProgressView("Searching...")
-                Spacer()
-            } else if !searchResults.isEmpty {
-                VStack(alignment: .leading) {
-                    Text(resultsListTitle)
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                            List(searchResults, id: \.serviceIDs) { track in
-                                Button(action: {
-                                    Task {
-                                        await cancelRecognitionBeforePlayback()
-                                        do {
-                                            try await musicPlayer.play(track: track)
-                                        } catch {
-                                            print("Failed to play selected track: \(error)")
-                                        }
-                                        await MainActor.run {
-                                            saveTrack(track)
-                                        }
-                                    }
-                                }) {
-                            HStack {
-                                if let url = track.artworkURL {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable()
-                                    } placeholder: {
-                                        Color.gray
-                                    }
-                                    .frame(width: 50, height: 50)
-                                    .cornerRadius(4)
-                                } else {
-                                    Image(systemName: "music.note")
-                                        .frame(width: 50, height: 50)
-                                        .background(Color.secondary.opacity(0.1))
-                                        .cornerRadius(4)
-                                }
-                                
-                                VStack(alignment: .leading) {
-                                    Text(track.title)
-                                        .font(.headline)
-                                    Text(track.artist)
-                                        .font(.subheadline)
+                
+                if !isPlayingDebounced && !musicPlayer.isSeeking {
+                    MicrophoneStatusView(
+                        isListening: recognitionState.isMicrophoneStreaming,
+                        isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
+                        toggleListening: { await toggleMicrophoneListening() },
+                        onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
+                    )
+                    if recognitionState.isMicrophoneStreaming {
+                        VStack(spacing: 12) {
+                            Text("All commands start with \"Please play\"")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+
+                            VStack(spacing: 4) {
+                                Text("\"*Please play* \(songVoiceCommandSuggestion)\"")
+                                    .font(.title3)
                                     .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
-                                    Image(systemName: "speaker.wave.3.fill")
-                                        .foregroundColor(.accentColor)
-                                        .font(.caption)
-                                }
+                            }
+                            VStack(spacing: 4) {
+                                Text("\"*Please play* \(artistVoiceCommandSuggestion)\"")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
                             }
                         }
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .onAppear {
+                            refreshVoiceCommandSuggestion()
+                        }
                     }
-                    .listStyle(.plain)
+                } else if !isSearching && searchResults.isEmpty {
+                    nowPlayingHighlight
                 }
+                
+                // Content for Empty State vs Now Playing
+                if isSearching {
+                    ProgressView("Searching...")
+                        .padding(.top, 40)
+                } else if !searchResults.isEmpty {
+                    searchResultsList
+                } else {
+                    VStack(spacing: 32) {
+                        if !suggestions.isEmpty {
+                            suggestionsSection
+                        }
+                        
+                        if !playedTracks.isEmpty {
+                            recentlyPlayedSection
+                        }
+                        
+                        if playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced {
+                            VStack(spacing: 20) {
+                                Image(systemName: "music.note.house")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.secondary)
+                                Text("Welcome to JustPlayIt")
+                                    .font(.title2)
+                                    .bold()
+                                Text("Try saying \"Please play Hey Jude\" to get started.")
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
+                            .padding(.top, 40)
+                        }
+                    }
+                }
+                
+                Spacer(minLength: 100)
             }
+            .padding(.vertical)
         }
         .onAppear {
             schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
@@ -144,9 +121,13 @@ struct HomeView: View {
             hasAppeared = true
             startInitialListeningIfNeeded()
             refreshVoiceCommandSuggestion()
+            refreshSuggestions()
         }
         .onChange(of: playedTracks) { _, _ in
             refreshVoiceCommandSuggestion()
+        }
+        .onChange(of: musicPlayer.currentTrack?.serviceIDs) { _, _ in
+            refreshSuggestions()
         }
         .onChange(of: recognitionState.speechTranscriber.finalizedTranscript) { old, new in
             let transcript = String(new.characters)
@@ -456,6 +437,303 @@ struct HomeView: View {
         } else {
             recognitionState.disableAutomaticCommandListening()
             await stopMicrophoneStreaming()
+        }
+    }
+
+    private var nowPlayingHighlight: some View {
+        Group {
+            if let currentTrack = musicPlayer.currentTrack {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Now Playing")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 16) {
+                        if let url = currentTrack.artworkURL {
+                            AsyncImage(url: url) { image in
+                                image.resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                Color.gray
+                            }
+                            .frame(width: 80, height: 80)
+                            .cornerRadius(8)
+                            .clipped()
+                        } else {
+                            Image(systemName: "music.note")
+                                .font(.title)
+                                .frame(width: 80, height: 80)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(8)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(currentTrack.title)
+                                .font(.headline)
+                                .lineLimit(1)
+                            Text(currentTrack.artist)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                            
+                            HStack(spacing: 4) {
+                                Image(systemName: "speaker.wave.3.fill")
+                                    .font(.caption)
+                                Text("Playing on \(musicPlayer.providerName)")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.accentColor)
+                            .padding(.top, 4)
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(Color.secondary.opacity(0.05))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
+            }
+        }
+    }
+
+    private var searchResultsList: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(resultsListTitle)
+                .font(.headline)
+                .padding(.horizontal)
+            
+            VStack(spacing: 0) {
+                ForEach(searchResults, id: \.serviceIDs) { track in
+                    Button(action: {
+                        Task {
+                            await cancelRecognitionBeforePlayback()
+                            do {
+                                try await musicPlayer.play(track: track)
+                            } catch {
+                                print("Failed to play selected track: \(error)")
+                            }
+                            await MainActor.run {
+                                saveTrack(track)
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            if let url = track.artworkURL {
+                                AsyncImage(url: url) { image in
+                                    image.resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Color.gray
+                                }
+                                .frame(width: 50, height: 50)
+                                .cornerRadius(4)
+                                .clipped()
+                            } else {
+                                Image(systemName: "music.note")
+                                    .frame(width: 50, height: 50)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .cornerRadius(4)
+                            }
+                            
+                            VStack(alignment: .leading) {
+                                Text(track.title)
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                                    .lineLimit(1)
+                                Text(track.artist)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                            
+                            Spacer()
+                            
+                            if musicPlayer.currentTrack?.serviceIDs == track.serviceIDs {
+                                Image(systemName: "speaker.wave.3.fill")
+                                    .foregroundColor(.accentColor)
+                                    .font(.caption)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    if track.serviceIDs != searchResults.last?.serviceIDs {
+                        Divider()
+                            .padding(.leading, 74)
+                    }
+                }
+            }
+            .background(Color.secondary.opacity(0.05))
+            .cornerRadius(12)
+            .padding(.horizontal)
+        }
+    }
+
+    private var suggestionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(suggestionsTitle)
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(suggestions, id: \.serviceIDs) { track in
+                        Button(action: {
+                            Task {
+                                await cancelRecognitionBeforePlayback()
+                                do {
+                                    try await musicPlayer.play(track: track)
+                                } catch {
+                                    print("Failed to play suggested track: \(error)")
+                                }
+                                await MainActor.run {
+                                    saveTrack(track)
+                                }
+                            }
+                        }) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let url = track.artworkURL {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    } placeholder: {
+                                        Color.gray
+                                    }
+                                    .frame(width: 140, height: 140)
+                                    .cornerRadius(8)
+                                    .clipped()
+                                } else {
+                                    Rectangle()
+                                        .fill(Color.secondary.opacity(0.1))
+                                        .frame(width: 140, height: 140)
+                                        .cornerRadius(8)
+                                        .overlay(Image(systemName: "music.note").font(.largeTitle))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(track.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .lineLimit(1)
+                                    Text(track.artist)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .frame(width: 140)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    private var recentlyPlayedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recently Played")
+                .font(.headline)
+                .padding(.horizontal)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(playedTracks.prefix(15)) { playedTrack in
+                        Button(action: {
+                            let track = Track(playedTrack: playedTrack)
+                            Task {
+                                await cancelRecognitionBeforePlayback()
+                                do {
+                                    try await musicPlayer.play(track: track)
+                                } catch {
+                                    print("Failed to play recently played track: \(error)")
+                                }
+                                await MainActor.run {
+                                    saveTrack(track)
+                                }
+                            }
+                        }) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let url = playedTrack.artworkURL {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    } placeholder: {
+                                        Color.gray
+                                    }
+                                    .frame(width: 110, height: 110)
+                                    .cornerRadius(8)
+                                    .clipped()
+                                } else {
+                                    Rectangle()
+                                        .fill(Color.secondary.opacity(0.1))
+                                        .frame(width: 110, height: 110)
+                                        .cornerRadius(8)
+                                        .overlay(Image(systemName: "music.note"))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(playedTrack.title)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .lineLimit(1)
+                                    Text(playedTrack.artist)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .frame(width: 110)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    private var suggestionsTitle: String {
+        if let current = musicPlayer.currentTrack {
+            return "More by \(current.artist)"
+        }
+        return "You Might Like"
+    }
+
+    private func refreshSuggestions() {
+        guard let current = musicPlayer.currentTrack else {
+            // Maybe suggest based on top played artist?
+            if let topArtist = playedTracks.first?.artist {
+                 fetchSuggestions(for: topArtist)
+            }
+            return
+        }
+        fetchSuggestions(for: current.artist)
+    }
+
+    private func fetchSuggestions(for artist: String) {
+        Task {
+            do {
+                let results = try await musicPlayer.search(query: artist)
+                await MainActor.run {
+                    // Filter out current track if possible
+                    self.suggestions = results.filter { track in
+                        if let current = musicPlayer.currentTrack {
+                            return track.title != current.title
+                        }
+                        return true
+                    }
+                }
+            } catch {
+                print("Failed to fetch suggestions: \(error)")
+            }
         }
     }
 }

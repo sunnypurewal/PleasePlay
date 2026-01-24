@@ -49,6 +49,7 @@ private enum UnauthorizedError: Error {
 @MainActor
 @Observable
 public class Unauthorized: StreamingMusicProvider {
+	public let name: String = "Preview"
 	private let player = AVPlayer()
 	private var playbackMonitorTask: Task<Void, Never>?
 

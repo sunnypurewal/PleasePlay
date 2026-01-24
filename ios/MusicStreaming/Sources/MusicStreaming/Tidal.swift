@@ -27,6 +27,7 @@ private class TidalPlayerListener: PlayerListener {
 @MainActor
 @Observable
 public class Tidal: StreamingMusicProvider {
+    public let name: String = "Tidal"
     public var isPlaying: Bool = false
     public var currentTrack: Track?
     public var currentPlaybackTime: TimeInterval = 0

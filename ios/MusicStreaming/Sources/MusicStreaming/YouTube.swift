@@ -11,6 +11,7 @@ import Observation
 @MainActor
 @Observable
 public class YouTube: StreamingMusicProvider {
+    public let name: String = "YouTube"
     public var isPlaying: Bool = false
     public var currentTrack: Track?
     public var currentPlaybackTime: TimeInterval = 0
