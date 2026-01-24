@@ -1,134 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonnio — music made simple for kids</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonnio - Music for Kids</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&family=Bricolage+Grotesque:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+        }
+        
+        /* Layout Switcher UI */
+        #layout-switcher {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 0.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .layout-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+        
+        .layout-btn.active {
+            background: #000;
+            color: #fff;
+        }
+
+        /* Base styles */
+        body { transition: background-color 0.5s ease; }
+        .layout-container { display: none; }
+        .layout-container.active { display: block; }
+
+        /* Typography variants */
+        .font-modern { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-playful { font-family: 'Outfit', sans-serif; }
+        .font-bold-brand { font-family: 'Bricolage Grotesque', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom Shapes for Playful Layout */
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(180deg, rgba(168, 85, 247, 0.2) 0%, rgba(99, 102, 241, 0.2) 100%);
+            filter: blur(80px);
+            border-radius: 50%;
+            z-index: -1;
+        }
+    </style>
 </head>
-<body>
-  <div class="page">
-    <header class="hero">
-      <div class="hero__content">
-        <p class="tag">Family-friendly · Voice-driven · Streaming-ready</p>
-        <h1>Sonnio</h1>
-        <p class="lede">
-          A music streaming + recognition companion that makes it effortless for kids (and their grown-ups) to
-          discover, request, and play songs on their own tablet.
-        </p>
-        <div class="hero__actions">
-          <button class="btn btn--primary">Get early access</button>
-          <button class="btn btn--ghost">See how it works</button>
-        </div>
-        <p class="hero__note">
-          Connect with Apple Music, Spotify, or Tidal and let built-in Shazam do the detective work.
-        </p>
-      </div>
-      <div class="hero__card">
-        <p class="hero__card-label">Voice command ready</p>
-        <p class="hero__card-track">“Please play The Beatles”</p>
-        <p class="hero__card-status">Streaming via Apple Music</p>
-      </div>
-    </header>
+<body class="font-modern">
 
-    <main>
-      <section class="section" aria-labelledby="feature-heading">
-        <div class="section__intro">
-          <p class="eyebrow">Designed for families</p>
-          <h2 id="feature-heading">Music discovery that stays in the kid zone</h2>
-          <p>
-            Sonnio keeps parental accounts untouched. Kids log in once to their favorite streaming service, use the
-            iPad they already love, and control everything with friendly voice prompts.
-          </p>
-        </div>
-        <div class="feature-grid">
-          <article>
-            <h3>Multistream access</h3>
-            <p>Apple Music, Spotify, Tidal — choose the library you already subscribe to without starting over.</p>
-          </article>
-          <article>
-            <h3>Shazam-powered discovery</h3>
-            <p>
-              Tap the recognizer and let the phone's built-in Shazam magic name any song. Add it to playlists or cue it up instantly.
-            </p>
-          </article>
-          <article>
-            <h3>Kid-friendly controls</h3>
-            <p>
-              Large buttons, gentle palettes, and simplified navigation keep the experience calm and confident.
-            </p>
-          </article>
-          <article>
-            <h3>Parent peace of mind</h3>
-            <p>
-              No more handing over phones. Sonnio stays on the iPad, keeps playback under control, and honors queued requests.
-            </p>
-          </article>
-        </div>
-      </section>
+    <!-- LAYOUT 1: MODERN TECH (DEFAULT) -->
+    <div id="layout-1" class="layout-container active bg-slate-50 min-h-screen">
+        <nav class="container mx-auto px-6 py-8 flex justify-between items-center">
+            <span class="text-4xl font-black tracking-tighter text-slate-900">SONNIO</span>
+            <a href="https://riddimsoftware.com" class="text-sm font-bold text-slate-400 hover:text-indigo-600 uppercase tracking-widest">Riddim Software</a>
+        </nav>
+        
+        <section class="container mx-auto px-6 pt-20 pb-32 text-center">
+            <h1 class="text-7xl md:text-9xl font-black text-slate-900 mb-8 tracking-tighter">SONNIO.</h1>
+            <p class="text-2xl text-slate-600 mb-12 max-w-2xl mx-auto font-medium">Music discovery made simple for kids. Voice activated. Parent approved.</p>
+            <div class="flex justify-center space-x-4">
+                <div class="bg-black text-white px-8 py-4 rounded-2xl flex items-center space-x-3">
+                    <i data-lucide="apple" class="w-8 h-8"></i>
+                    <div class="text-left">
+                        <p class="text-[10px] uppercase font-bold opacity-70">Download on the</p>
+                        <p class="text-xl font-semibold">App Store</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
 
-      <section class="section section--highlight" aria-labelledby="voice-heading">
-        <div>
-          <p class="eyebrow">Natural commands</p>
-          <h2 id="voice-heading">Speak it, play it</h2>
-          <p>
-            Sonnio listens for warm, conversational commands. “Play The Beatles,” “What song is this?”, or even
-            “Let’s hear something upbeat.” Voice-first shortcuts keep momentum without clunky menus.
-          </p>
-        </div>
-        <div class="voice-cards">
-          <article>
-            <h3>Command focus</h3>
-            <p>
-              Microphone access means kids can stay in the zone—just ask and Sonnio handles the rest.
-            </p>
-          </article>
-          <article>
-            <h3>Recognition confidence</h3>
-            <p>
-              Shazam integration runs privately on the device, matching ambient music in seconds and cueing the stream.
-            </p>
-          </article>
-        </div>
-      </section>
+    <!-- LAYOUT 2: PLAYFUL & BUBBLY -->
+    <div id="layout-2" class="layout-container bg-[#fff5f8] min-h-screen overflow-hidden relative">
+        <div class="blob top-[-100px] left-[-100px]"></div>
+        <div class="blob bottom-[-100px] right-[-100px] !bg-pink-200/30"></div>
+        
+        <nav class="container mx-auto px-6 py-10 flex justify-center">
+            <span class="text-5xl font-black text-indigo-600 font-playful tracking-tight">sonnio!</span>
+        </nav>
 
-      <section class="section" aria-labelledby="why-heading">
-        <div class="section__intro">
-          <p class="eyebrow">What makes Sonnio different</p>
-          <h2 id="why-heading">Purpose-built for budding listeners</h2>
-        </div>
-        <div class="story-grid">
-          <article>
-            <h3>Inspired by a simple problem</h3>
-            <p>
-              Kids deserve a frictionless way to explore music. Sonnio was born from watching little ones struggle with
-              grown-up apps and tangled parental controls.
-            </p>
-          </article>
-          <article>
-            <h3>Every feature reduces friction</h3>
-            <p>
-              Instant streaming login, Shazam recognition, and voice commands keep energy high and frustration low.
-            </p>
-          </article>
-        </div>
-      </section>
+        <section class="container mx-auto px-6 py-20 text-center">
+            <div class="bg-white p-2 inline-block rounded-3xl shadow-xl mb-8 -rotate-2">
+                <div class="bg-indigo-600 text-white px-6 py-2 rounded-2xl font-bold">"Please play The Beatles"</div>
+            </div>
+            <h1 class="text-6xl md:text-8xl font-black text-slate-900 mb-8 font-playful">Just say it.<br/><span class="text-indigo-600">Play it.</span></h1>
+            <p class="text-xl text-slate-600 mb-12 max-w-xl mx-auto font-playful font-semibold">The first music app designed for kids who want their own soundtrack without the fuss.</p>
+            <button class="bg-indigo-600 text-white text-2xl font-black px-12 py-6 rounded-full shadow-2xl hover:scale-105 transition transform">GET SONNIO</button>
+        </section>
+    </div>
 
-      <section class="cta" aria-labelledby="cta-heading">
-        <div>
-          <h2 id="cta-heading">Let the music play</h2>
-          <p>
-            Ready to put the soundtrack back in your kid's hands? Sonnio ships with family-safe defaults, easy streaming
-            login, and a voice-first playbook.
-          </p>
+    <!-- LAYOUT 3: MINIMALIST DARK -->
+    <div id="layout-3" class="layout-container bg-black min-h-screen text-white">
+        <div class="container mx-auto px-6 py-32 flex flex-col items-center justify-center text-center">
+            <span class="text-[12rem] font-black leading-none tracking-tighter opacity-20 absolute top-10">SONNIO</span>
+            <div class="relative z-10">
+                <h1 class="text-5xl md:text-7xl font-bold mb-8">Less friction.<br/>More music.</h1>
+                <p class="text-xl text-zinc-400 mb-12 max-w-md mx-auto">Apple Music integration. Voice commands. Music recognition. Everything for the young listener.</p>
+                <a href="#" class="border-2 border-white px-10 py-4 rounded-full font-bold hover:bg-white hover:text-black transition">Download for iPad</a>
+            </div>
         </div>
-        <button class="btn btn--primary">Request a demo</button>
-      </section>
-    </main>
+    </div>
 
-    <footer>
-      <p>© 2025 Sonnio · Built for kids 8+ with trusted streaming partners.</p>
+    <!-- LAYOUT 4: THE GRID (CREATIVE) -->
+    <div id="layout-4" class="layout-container bg-white min-h-screen">
+        <div class="grid grid-cols-1 md:grid-cols-2 min-h-screen">
+            <div class="bg-indigo-600 flex flex-col justify-center p-12 md:p-24 text-white">
+                <h1 class="text-8xl font-black mb-8">SONNIO</h1>
+                <p class="text-2xl font-medium opacity-90">Why ask Mom or Dad? Use your voice to play master of puppets by metallica instantly.</p>
+            </div>
+            <div class="flex flex-col justify-center p-12 md:p-24 space-y-12 bg-slate-50">
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-bold text-slate-900">Voice Recognition</h3>
+                    <p class="text-slate-600">Simple, powerful prompts designed for kids 8+.</p>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-3xl font-bold text-slate-900">Built-in Shazam</h3>
+                    <p class="text-slate-600">Identify any song playing in the room with one tap.</p>
+                </div>
+                <div class="pt-8">
+                     <a href="#" class="inline-block bg-black text-white px-8 py-4 rounded-xl font-bold">App Store</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYOUT 5: RETRO & VIBRANT -->
+    <div id="layout-5" class="layout-container bg-yellow-400 min-h-screen border-[16px] border-black">
+        <nav class="p-8 flex justify-between items-center">
+            <span class="text-4xl font-black bg-white border-4 border-black px-4 py-2 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">SONNIO</span>
+        </nav>
+        <div class="container mx-auto px-6 py-20 text-center">
+            <h1 class="text-7xl md:text-9xl font-black uppercase italic mb-12 shadow-text">Play it Loud!</h1>
+            <div class="max-w-2xl mx-auto bg-white border-4 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-left mb-12">
+                <p class="text-2xl font-bold mb-4">Sonnio is way easier than getting your parents' phone. Connect Apple Music and start listening now.</p>
+                <div class="flex items-center space-x-2 text-indigo-600 font-black italic">
+                    <i data-lucide="zap"></i>
+                    <span>TIDAL & SPOTIFY COMING SOON</span>
+                </div>
+            </div>
+            <a href="#" class="inline-block bg-indigo-600 text-white border-4 border-black px-12 py-6 text-3xl font-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">GET IT NOW</a>
+        </div>
+    </div>
+
+    <!-- Shared Footer for all layouts -->
+    <footer class="py-12 bg-transparent text-center relative z-20">
+        <div class="container mx-auto px-6">
+            <div class="h-px bg-slate-200 w-full mb-8 opacity-20"></div>
+            <p class="text-slate-500 font-medium">
+                Created by <a href="https://riddimsoftware.com" class="text-slate-900 font-bold hover:underline decoration-indigo-500 decoration-2">Riddim Software</a>
+            </p>
+        </div>
     </footer>
-  </div>
+
+    <!-- Layout Switcher Controls -->
+    <div id="layout-switcher">
+        <button onclick="switchLayout(1)" class="layout-btn active" id="btn-1">Modern</button>
+        <button onclick="switchLayout(2)" class="layout-btn" id="btn-2">Playful</button>
+        <button onclick="switchLayout(3)" class="layout-btn" id="btn-3">Minimal</button>
+        <button onclick="switchLayout(4)" class="layout-btn" id="btn-4">Grid</button>
+        <button onclick="switchLayout(5)" class="layout-btn" id="btn-5">Retro</button>
+    </div>
+
+    <script>
+        function switchLayout(id) {
+            // Hide all layouts
+            document.querySelectorAll('.layout-container').forEach(el => {
+                el.classList.remove('active');
+            });
+            // Show selected layout
+            document.getElementById('layout-' + id).classList.add('active');
+            
+            // Update buttons
+            document.querySelectorAll('.layout-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById('btn-' + id).classList.add('active');
+
+            // Optional: Update body classes for fonts
+            const fonts = ['font-modern', 'font-playful', 'font-modern', 'font-modern', 'font-bold-brand'];
+            document.body.className = fonts[id-1];
+            
+            // Refresh icons
+            lucide.createIcons();
+        }
+        
+        // Initialize
+        lucide.createIcons();
+    </script>
 </body>
 </html>
