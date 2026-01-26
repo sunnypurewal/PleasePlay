@@ -170,9 +170,14 @@ private struct HistoryRow: View {
             artworkView
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(song.title)
-                    .font(.body)
-                    .foregroundStyle(.primary)
+                HStack(spacing: 4) {
+                    Text(song.title)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    if song.isExplicit {
+                        ExplicitBadge()
+                    }
+                }
                 Text(song.artist)
                     .font(.caption)
                     .foregroundStyle(.secondary)

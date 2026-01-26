@@ -31,8 +31,9 @@ public struct Track: Equatable {
 
 	// Provider specific IDs
 	public var serviceIDs: StreamingServiceIDs
-	
-	public init(title: String, artist: String, album: String, artworkURL: URL? = nil, previewURL: String? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init()) {
+	public var isExplicit: Bool
+
+	public init(title: String, artist: String, album: String, artworkURL: URL? = nil, previewURL: String? = nil, duration: TimeInterval, serviceIDs: StreamingServiceIDs = .init(), isExplicit: Bool = false) {
 		self.title = title
 		self.artist = artist
 		self.album = album
@@ -40,6 +41,7 @@ public struct Track: Equatable {
 		self.previewURL = previewURL
 		self.duration = duration
 		self.serviceIDs = serviceIDs
+		self.isExplicit = isExplicit
 	}
 
 	public static func == (lhs: Track, rhs: Track) -> Bool {
@@ -50,6 +52,7 @@ public struct Track: Equatable {
 			&& lhs.previewURL == rhs.previewURL
 			&& lhs.duration == rhs.duration
 			&& lhs.serviceIDs == rhs.serviceIDs
+			&& lhs.isExplicit == rhs.isExplicit
 	}
 }
 

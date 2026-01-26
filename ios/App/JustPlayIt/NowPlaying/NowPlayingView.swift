@@ -47,10 +47,15 @@ struct NowPlayingView: View {
             }
 			
 			VStack(spacing: 8) {
-                Text(currentSong.title)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+                HStack(spacing: 4) {
+                    Text(currentSong.title)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                    if currentSong.isExplicit {
+                        ExplicitBadge()
+                    }
+                }
                 
                 Text(currentSong.artist)
                     .font(.subheadline)

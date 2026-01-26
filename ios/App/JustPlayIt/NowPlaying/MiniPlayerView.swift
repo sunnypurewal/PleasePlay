@@ -51,14 +51,19 @@ struct MiniPlayerView: View {
 						)
 				}
 
-					VStack(alignment: .leading, spacing: 2) {
+				VStack(alignment: .leading, spacing: 2) {
+					HStack(spacing: 4) {
 						Text(currentSong.title)
 							.fontWeight(.semibold)
 							.font(.callout)
 							.lineLimit(1)
+						if currentSong.isExplicit {
+							ExplicitBadge()
+						}
+					}
 
-						Text(currentSong.artist)
-							.font(.caption)
+					Text(currentSong.artist)
+						.font(.caption)
 						.foregroundColor(.secondary)
 						.lineLimit(1)
 				}

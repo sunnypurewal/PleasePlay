@@ -336,6 +336,7 @@ struct HomeView: View {
                 existingTrack.playCount += 1
                 existingTrack.playHistory.append(Date())
                 existingTrack.lastPlayedAt = Date()
+                existingTrack.isExplicit = track.isExplicit
             } else {
                 let playedTrack = PlayedTrack(
                     title: track.title,
@@ -347,7 +348,8 @@ struct HomeView: View {
                     appleMusicID: track.serviceIDs.appleMusic,
                     spotifyID: track.serviceIDs.spotify,
                     tidalID: track.serviceIDs.tidal,
-                    youTubeID: track.serviceIDs.youtube
+                    youTubeID: track.serviceIDs.youtube,
+                    isExplicit: track.isExplicit
                 )
                 modelContext.insert(playedTrack)
             }
@@ -441,9 +443,14 @@ struct HomeView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(currentTrack.title)
-                                .font(.headline)
-                                .lineLimit(1)
+                            HStack(spacing: 4) {
+                                Text(currentTrack.title)
+                                    .font(.headline)
+                                    .lineLimit(1)
+                                if currentTrack.isExplicit {
+                                    ExplicitBadge()
+                                }
+                            }
                             Text(currentTrack.artist)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
@@ -505,10 +512,15 @@ struct HomeView: View {
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(track.title)
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .lineLimit(1)
+                                    HStack(spacing: 4) {
+                                        Text(track.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.semibold)
+                                            .lineLimit(1)
+                                        if track.isExplicit {
+                                            ExplicitBadge()
+                                        }
+                                    }
                                     Text(track.artist)
                                         .font(.caption)
                                         .foregroundColor(.secondary)

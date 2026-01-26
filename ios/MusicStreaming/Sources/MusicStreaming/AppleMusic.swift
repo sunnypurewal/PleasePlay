@@ -82,7 +82,8 @@ import Observation
             album: songItem.albumTitle ?? "",
             artworkURL: songItem.artwork?.url(width: 300, height: 300),
             duration: songItem.duration ?? 0,
-            serviceIDs: .init(appleMusic: songItem.id.rawValue)
+            serviceIDs: .init(appleMusic: songItem.id.rawValue),
+            isExplicit: songItem.contentRating == .explicit
         )
 
         self.lastNowPlayingItemID = songItem.id
@@ -104,7 +105,8 @@ import Observation
                 album: songItem.albumTitle ?? "",
                 artworkURL: songItem.artwork?.url(width: 300, height: 300),
                 duration: songItem.duration ?? 0,
-                serviceIDs: .init(appleMusic: songItem.id.rawValue)
+                serviceIDs: .init(appleMusic: songItem.id.rawValue),
+                isExplicit: songItem.contentRating == .explicit
             )
         }
     }
@@ -135,7 +137,8 @@ import Observation
                 album: songItem.albumTitle ?? "",
                 artworkURL: songItem.artwork?.url(width: 300, height: 300),
                 duration: songItem.duration ?? 0,
-                serviceIDs: .init(appleMusic: songItem.id.rawValue)
+                serviceIDs: .init(appleMusic: songItem.id.rawValue),
+                isExplicit: songItem.contentRating == .explicit
             )
         }
     }
