@@ -43,7 +43,7 @@ struct HistoryView: View {
                 }
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var summaryView: some View {

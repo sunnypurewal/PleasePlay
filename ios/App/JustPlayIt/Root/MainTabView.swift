@@ -23,10 +23,13 @@ struct MainTabView: View {
             }
 
             TabView {
-                HomeView()
-                    .tabItem {
-                        Label("Home", systemImage: "house.fill")
-                    }
+                NavigationStack {
+                    HomeView()
+                        .navigationTitle("Home")
+                }
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
 
                 NavigationStack {
                     DiscoverView()

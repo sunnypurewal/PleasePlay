@@ -86,8 +86,9 @@ struct HomeView: View {
                 
                 Spacer(minLength: 100)
             }
-            .padding(.vertical)
-        }
+        .padding(.vertical)
+        .navigationBarTitleDisplayMode(.inline)
+    }
         .onAppear {
             schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
             checkMicrophonePermission(shouldStartListening: !hasAppeared)
