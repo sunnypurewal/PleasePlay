@@ -37,58 +37,64 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Microphone Permission Banner
-                if !microphonePermissionGranted {
-                    MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
-                }
-                
-                if !isPlayingDebounced && !musicPlayer.isSeeking {
-                    MicrophoneStatusView(
-                        isListening: recognitionState.isMicrophoneStreaming,
-                        isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
-                        toggleListening: { await toggleMicrophoneListening() },
-                        onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
-                    )
-                } else if !isSearching {
-                    nowPlayingHighlight
-                }
-                
-                // Content for Empty State vs Now Playing
-                if isSearching {
-                    ProgressView("Searching...")
-                        .padding(.top, 40)
-                } else {
-                    VStack(spacing: 32) {
-                        if musicPlayer.isPlaying || musicPlayer.isSeeking {
-                            if !suggestions.isEmpty {
-                                suggestionsSection
-                            }
-                        }
-                        
-                        if (playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced) || (!musicPlayer.isPlaying && !musicPlayer.isSeeking) {
-                            VStack(spacing: 20) {
-                                Image(systemName: "music.note.house")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.secondary)
-                                Text("Welcome to Sonnio")
-                                    .font(.title2)
-                                    .bold()
-                                Text("Try saying \"Please play \(songVoiceCommandSuggestion)\" to get started.")
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                            }
+            VStack(spacing: 0) {
+                LargeTitleHeader(title: "Home")
+                    .padding(.horizontal, 24)
+
+                VStack(spacing: 24) {
+                    // Microphone Permission Banner
+                    if !microphonePermissionGranted {
+                        MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
+                    }
+                    
+                    if !isPlayingDebounced && !musicPlayer.isSeeking {
+                        MicrophoneStatusView(
+                            isListening: recognitionState.isMicrophoneStreaming,
+                            isAutomaticListeningEnabled: $isAutomaticListeningEnabled,
+                            toggleListening: { await toggleMicrophoneListening() },
+                            onAutomaticListeningChanged: { isEnabled in await handleAutomaticListeningChange(isEnabled) }
+                        )
+                    } else if !isSearching {
+                        nowPlayingHighlight
+                    }
+                    
+                    // Content for Empty State vs Now Playing
+                    if isSearching {
+                        ProgressView("Searching...")
                             .padding(.top, 40)
+                    } else {
+                        VStack(spacing: 32) {
+                            if musicPlayer.isPlaying || musicPlayer.isSeeking {
+                                if !suggestions.isEmpty {
+                                    suggestionsSection
+                                }
+                            }
+                            
+                            if (playedTracks.isEmpty && suggestions.isEmpty && !isPlayingDebounced) || (!musicPlayer.isPlaying && !musicPlayer.isSeeking) {
+                                VStack(spacing: 20) {
+                                    Image(systemName: "music.note.house")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(.secondary)
+                                    Text("Welcome to Sonnio")
+                                        .font(.title2)
+                                        .bold()
+                                    Text("Try saying \"Please play \(songVoiceCommandSuggestion)\" to get started.")
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal)
+                                }
+                                .padding(.top, 40)
+                            }
                         }
                     }
+                    
+                    Spacer(minLength: 100)
                 }
-                
-                Spacer(minLength: 100)
+                .padding(.horizontal, 24)
             }
-        .padding(.vertical)
-        .navigationBarTitleDisplayMode(.inline)
-    }
+        }
+        .padding(.bottom)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
             checkMicrophonePermission(shouldStartListening: !hasAppeared)

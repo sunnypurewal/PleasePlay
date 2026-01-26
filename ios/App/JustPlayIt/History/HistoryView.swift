@@ -19,31 +19,36 @@ struct HistoryView: View {
     private let miniPlayerInsetHeight: CGFloat = 120
 
     var body: some View {
-        VStack(alignment: .leading) {
-            if songs.isEmpty {
-                ContentUnavailableView {
-                    Label("No History", systemImage: "clock")
-                } description: {
-                    Text("Songs you play will appear here.")
-                }
-                .frame(height: 150)
-            } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    summaryView
-                    List(sortedSongs) { song in
-                        HistoryRow(song: song)
+        VStack(spacing: 0) {
+            LargeTitleHeader(title: "History")
+                .padding(.horizontal, 24)
+
+            VStack(alignment: .leading) {
+                if songs.isEmpty {
+                    ContentUnavailableView {
+                        Label("No History", systemImage: "clock")
+                    } description: {
+                        Text("Songs you play will appear here.")
                     }
-                    .listStyle(.plain)
-                    .safeAreaInset(edge: .bottom) {
-                        if musicPlayer.currentTrack != nil {
-                            Color.clear
-                                .frame(height: miniPlayerInsetHeight)
+                    .frame(height: 150)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        summaryView
+                        List(sortedSongs) { song in
+                            HistoryRow(song: song)
+                        }
+                        .listStyle(.plain)
+                        .safeAreaInset(edge: .bottom) {
+                            if musicPlayer.currentTrack != nil {
+                                Color.clear
+                                    .frame(height: miniPlayerInsetHeight)
+                            }
                         }
                     }
                 }
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     private var summaryView: some View {

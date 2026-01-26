@@ -23,6 +23,8 @@ struct DiscoverView: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            LargeTitleHeader(title: "Discover")
+
             Button {
                 Task {
                     if isRecognizing {
@@ -124,8 +126,9 @@ struct DiscoverView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(24)
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 24)
+        .toolbar(.hidden, for: .navigationBar)
         .onChange(of: musicPlayer.isPlaying) { _, isPlaying in
             guard isPlaying else { return }
             Task {
