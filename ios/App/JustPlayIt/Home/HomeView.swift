@@ -34,12 +34,24 @@ struct HomeView: View {
     @State private var recognizedTitle = ""
     @State private var isPlayingDebounced = false
     @State private var playbackDebounceTask: Task<Void, Never>?
+    @State private var showSettingsSheet = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                LargeTitleHeader(title: "Home")
-                    .padding(.horizontal, 24)
+                HStack(alignment: .top, spacing: 16) {
+                    LargeTitleHeader(title: "Home")
+                    Spacer()
+                    Button {
+                        showSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.title2)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 24)
 
                 VStack(spacing: 24) {
                     // Microphone Permission Banner
@@ -95,6 +107,9 @@ struct HomeView: View {
         }
         .padding(.bottom)
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showSettingsSheet) {
+            SettingsView()
+        }
         .onAppear {
             schedulePlaybackStateDebounce(isPlaying: musicPlayer.isPlaying)
             checkMicrophonePermission(shouldStartListening: !hasAppeared)
