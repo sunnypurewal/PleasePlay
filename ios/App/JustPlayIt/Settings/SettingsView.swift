@@ -10,34 +10,23 @@ struct SettingsView: View {
     @State private var showPinSetupSheet = false
     @State private var pinInput = ""
     @State private var pinError: String?
+    @State private var pendingFilterValue: Bool?
     @State private var newPin = ""
     @State private var confirmPin = ""
     @State private var setupError: String?
-    @State private var pinEntryMode: PinEntryMode?
-
-    private enum PinEntryMode {
-        case disableFilter
-        case removePin
-    }
 
     private var explicitFilterBinding: Binding<Bool> {
         Binding(
             get: { explicitFilterEnabled },
             set: { newValue in
-                if !newValue {
-                    if explicitFilterPin != nil {
-                        pinEntryMode = .disableFilter
-                        pinInput = ""
-                        pinError = nil
-                        showPinEntrySheet = true
-                        return
-                    }
-                    explicitFilterEnabled = false
-                    explicitFilterPin = nil
-                    return
+                if explicitFilterPin != nil {
+                    pendingFilterValue = newValue
+                    pinInput = ""
+                    pinError = nil
+                    showPinEntrySheet = true
+                } else {
+                    explicitFilterEnabled = newValue
                 }
-
-                explicitFilterEnabled = true
             }
         )
     }
@@ -62,10 +51,7 @@ struct SettingsView: View {
                             preparePinSetup()
                         }
                         Button("Remove PIN", role: .destructive) {
-                            pinEntryMode = .removePin
-                            pinInput = ""
-                            pinError = nil
-                            showPinEntrySheet = true
+                            explicitFilterPin = nil
                         }
                     }
                 }
@@ -143,11 +129,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 SecureField("Enter PIN", text: $pinInput)
-                    .keyboardType(.numberPad)
-                    .onChange(of: pinInput) { pinInput = sanitizePinText($0) }
-                Text(pinEntryMode == .removePin ? "Enter PIN to remove the lock." : "Enter PIN to disable the filter.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
                 if let error = pinError {
                     Text(error)
                         .foregroundColor(.red)
@@ -175,21 +156,14 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 SecureField("New PIN", text: $newPin)
-                    .keyboardType(.numberPad)
-                    .onChange(of: newPin) { newPin = sanitizePinText($0) }
                 SecureField("Confirm PIN", text: $confirmPin)
-                    .keyboardType(.numberPad)
-                    .onChange(of: confirmPin) { confirmPin = sanitizePinText($0) }
-                Text("This PIN prevents the explicit filter from being disabled without the code.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
                 if let error = setupError {
                     Text(error)
                         .foregroundColor(.red)
                         .font(.caption)
                 }
             }
-            .navigationTitle("Add PIN")
+            .navigationTitle("Protect Filter")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -213,14 +187,8 @@ struct SettingsView: View {
         }
 
         if pinInput == storedPin {
-            switch pinEntryMode {
-            case .disableFilter:
-                explicitFilterEnabled = false
-                explicitFilterPin = nil
-            case .removePin:
-                explicitFilterPin = nil
-            case .none:
-                break
+            if let targetValue = pendingFilterValue {
+                explicitFilterEnabled = targetValue
             }
             closePinEntry()
         } else {
@@ -230,7 +198,7 @@ struct SettingsView: View {
 
     private func closePinEntry() {
         showPinEntrySheet = false
-        pinEntryMode = nil
+        pendingFilterValue = nil
         pinInput = ""
         pinError = nil
     }
@@ -240,16 +208,8 @@ struct SettingsView: View {
             setupError = "PINs must match"
             return
         }
-        guard newPin.count == 4 else {
-            setupError = "PIN must be 4 digits"
-            return
-        }
         explicitFilterPin = newPin
         setupError = nil
         showPinSetupSheet = false
-    }
-
-    private func sanitizePinText(_ text: String) -> String {
-        String(text.filter(\.isNumber).prefix(4))
     }
 }
