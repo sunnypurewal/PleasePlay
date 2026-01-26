@@ -203,7 +203,7 @@ struct DiscoverView: View {
                 recognitionState.isMusicRecognitionActive = false
                 recognitionState.clearCancelRecognitionHandler()
             }
-            await resetContinuousRecognitionCooldown()
+            resetContinuousRecognitionCooldown()
             await resumePlaybackIfNeeded()
             return
         }
@@ -218,7 +218,7 @@ struct DiscoverView: View {
                 await toggleContinuousRecognition()
             }
         }
-        await resetContinuousRecognitionCooldown()
+        resetContinuousRecognitionCooldown()
         do {
             try await recognizer.startContinuousRecognition(for: nil) { result in
                 Task { @MainActor in
@@ -254,7 +254,7 @@ struct DiscoverView: View {
                 await toggleContinuousRecognition()
             }
         }
-        await resetContinuousRecognitionCooldown()
+        resetContinuousRecognitionCooldown()
         continuousStopTask?.cancel()
         continuousStopTask = Task {
             do {

@@ -17,6 +17,8 @@ import MusicAI
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Query(sort: \PlayedTrack.addedAt, order: .reverse) private var playedTracks: [PlayedTrack]
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
@@ -483,64 +485,64 @@ struct HomeView: View {
             }
             .padding(.horizontal)
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(suggestions, id: \.serviceIDs) { track in
-                        Button(action: {
-                            Task {
-                                await cancelRecognitionBeforePlayback()
-                                do {
-                                    try await musicPlayer.play(track: track)
-                                } catch {
-                                    print("Failed to play suggested track: \(error)")
-                                }
-                                await MainActor.run {
-                                    saveTrack(track)
-                                }
+            LazyVGrid(columns: suggestionGridColumns, spacing: 16) {
+                ForEach(suggestions, id: \.serviceIDs) { track in
+                    Button(action: {
+                        Task {
+                            await cancelRecognitionBeforePlayback()
+                            do {
+                                try await musicPlayer.play(track: track)
+                            } catch {
+                                print("Failed to play suggested track: \(error)")
                             }
-                        }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                if let url = track.artworkURL {
-                                    AsyncImage(url: url) { image in
-                                        image.resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                    } placeholder: {
-                                        Color.gray
-                                    }
-                                    .frame(width: 140, height: 140)
-                                    .cornerRadius(8)
-                                    .clipped()
-                                } else {
-                                    Rectangle()
-                                        .fill(Color.secondary.opacity(0.1))
-                                        .frame(width: 140, height: 140)
-                                        .cornerRadius(8)
-                                        .overlay(Image(systemName: "music.note").font(.largeTitle))
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 4) {
-                                        Text(track.title)
-                                            .font(.subheadline)
-                                            .fontWeight(.semibold)
-                                            .lineLimit(1)
-                                        if track.isExplicit {
-                                            ExplicitBadge()
-                                        }
-                                    }
-                                    Text(track.artist)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
+                            await MainActor.run {
+                                saveTrack(track)
                             }
-                            .frame(width: 140)
                         }
-                        .buttonStyle(.plain)
+                    }) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let url = track.artworkURL {
+                                AsyncImage(url: url) { image in
+                                    image.resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } placeholder: {
+                                    Color.gray
+                                }
+                                .frame(height: 140)
+                                .frame(maxWidth: .infinity)
+                                .cornerRadius(8)
+                                .clipped()
+                            } else {
+                                Rectangle()
+                                    .fill(Color.secondary.opacity(0.1))
+                                    .frame(height: 140)
+                                    .frame(maxWidth: .infinity)
+                                    .cornerRadius(8)
+                                    .overlay(Image(systemName: "music.note").font(.largeTitle))
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 4) {
+                                    Text(track.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .lineLimit(1)
+                                    if track.isExplicit {
+                                        ExplicitBadge()
+                                    }
+                                }
+                                Text(track.artist)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal)
             }
+            .padding(.horizontal)
         }
     }
 
@@ -565,20 +567,37 @@ struct HomeView: View {
     private func fetchSuggestions(for artist: String) {
         Task {
             do {
-                let results = try await musicPlayer.getTopSongs(for: artist)
+                var combinedResults = try await musicPlayer.getTopSongs(for: artist)
+
+                if combinedResults.count < 20 {
+                    let searchResults = try await musicPlayer.search(query: artist)
+                    let uniqueNew = searchResults.filter { !combinedResults.contains($0) }
+                    combinedResults.append(contentsOf: uniqueNew.prefix(20 - combinedResults.count))
+                }
+
                 await MainActor.run {
-                    // Filter out current track if possible
-                    self.suggestions = results.filter { track in
+                    let filtered = combinedResults.filter { track in
                         if let current = musicPlayer.currentTrack {
                             return track.title != current.title
                         }
                         return true
                     }
+                    self.suggestions = Array(filtered.prefix(20))
                 }
             } catch {
                 print("Failed to fetch suggestions: \(error)")
             }
         }
+    }
+
+    private var suggestionGridColumns: [GridItem] {
+        let columnCount: Int
+        if horizontalSizeClass == .compact {
+            columnCount = 2
+        } else {
+            columnCount = (verticalSizeClass == .compact) ? 5 : 3
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 16), count: columnCount)
     }
 
 }
