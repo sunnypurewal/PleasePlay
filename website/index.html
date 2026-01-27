@@ -99,9 +99,16 @@
         </p>
 
         <div class="flex flex-col items-center space-y-6">
-            <a href="#" class="hover:scale-105 transition transform duration-200">
-                <img src="app-store.svg" alt="Download on the App Store" class="h-[72px]">
-            </a>
+            <div class="relative inline-flex">
+                <div class="pointer-events-none rounded-2xl transition transform duration-200 hover:scale-105 opacity-70"
+                    role="img" aria-label="Download on the App Store (coming soon)">
+                    <img src="app-store.svg" alt="Download on the App Store" class="h-[72px]">
+                </div>
+                <span
+                    class="absolute -top-4 -right-4 bg-gradient-to-r from-indigo-600 to-slate-900 text-white tracking-[0.2em] px-4 py-2 rounded-full shadow-2xl shadow-indigo-900/60 text-sm uppercase font-black">
+                    Coming Soon
+                </span>
+            </div>
             <div class="flex items-center space-x-3 text-slate-500 font-bold">
                 <i data-lucide="check-circle-2" class="text-green-500 w-5 h-5"></i>
                 <span>Connects with Apple Music</span>
@@ -165,7 +172,28 @@
         </div>
     </section>
 
-    <!-- CTA Footer -->
+    <!-- Screenshots -->
+    <section class="container mx-auto px-6 py-24">
+        <div class="bg-white/80 border border-indigo-100 rounded-[3rem] p-8 md:p-16 shadow-2xl shadow-indigo-100">
+            <div class="text-center mb-10">
+                <p class="text-sm uppercase tracking-[0.4em] text-indigo-400 font-black mb-3">Sneak peek</p>
+                <h2 class="text-4xl md:text-5xl font-black text-slate-900">Inside the Sonnio experience</h2>
+                <p class="text-slate-500 font-medium mt-3">Swipe through the App Store gallery to see how quickly Sonnio listens, understands, and plays.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <figure class="rounded-[2rem] overflow-hidden shadow-xl shadow-indigo-50 border border-indigo-50">
+                    <img src="App-Store-iPhone-1 Large.png" alt="Sonnio voice-first home screen" class="w-full h-full object-cover">
+                </figure>
+                <figure class="rounded-[2rem] overflow-hidden shadow-xl shadow-indigo-50 border border-indigo-50">
+                    <img src="App-Store-iPhone-2 Large.png" alt="Sonnio now playing screen" class="w-full h-full object-cover">
+                </figure>
+                <figure class="rounded-[2rem] overflow-hidden shadow-xl shadow-indigo-50 border border-indigo-50">
+                    <img src="App-Store-iPhone-3 Large.png" alt="Sonnio recognition and queue" class="w-full h-full object-cover">
+                </figure>
+            </div>
+        </div>
+    </section>
+
     <footer class="container mx-auto px-6 py-24 text-center">
         <h2 class="text-6xl md:text-8xl font-black mb-12 tracking-tighter uppercase">Ready to play?</h2>
         <div class="flex flex-col items-center space-y-8">
