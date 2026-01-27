@@ -222,9 +222,19 @@
         ];
 
         const banner = document.getElementById('dynamic-banner');
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        banner.textContent = randomMessage;
-        banner.classList.remove('opacity-0');
+        let bannerIndex = 0;
+
+        function showBannerMessage() {
+            banner.textContent = messages[bannerIndex];
+            banner.classList.remove('opacity-0');
+            bannerIndex = (bannerIndex + 1) % messages.length;
+        }
+
+        showBannerMessage();
+        setInterval(() => {
+            banner.classList.add('opacity-0');
+            setTimeout(showBannerMessage, 500);
+        }, 4000);
 
         // Voice Command Cycling
         const commands1 = [
