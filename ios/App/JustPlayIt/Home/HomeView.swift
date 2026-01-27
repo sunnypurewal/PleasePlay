@@ -23,6 +23,9 @@ struct HomeView: View {
     @Environment(MusicPlayer.self) var musicPlayer
     @EnvironmentObject private var recognitionState: RecognitionListeningState
     @State private var microphonePermissionGranted = false
+    private var isMicrophoneDenied: Bool {
+        AVAudioApplication.shared.recordPermission == .denied
+    }
     @AppStorage("isAutomaticListeningEnabled") private var isAutomaticListeningEnabled = true
     @State private var predictor = Predictor()
     @State private var searchResults: [Track] = []
@@ -46,7 +49,7 @@ struct HomeView: View {
                 VStack(spacing: 24) {
                     // Microphone Permission Banner
                     if !microphonePermissionGranted {
-                        MicrophonePermissionView(onRequestAccess: requestMicrophoneAccess)
+                        MicrophonePermissionView(isDenied: isMicrophoneDenied, onRequestAccess: requestMicrophoneAccess)
                     }
                     
                     if !isPlayingDebounced && !musicPlayer.isSeeking {
@@ -198,10 +201,7 @@ struct HomeView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                Task {
-                    // This might still be useful to ensure we start if we were suspended
-                    await resumeAutomaticListeningIfAllowed(reason: "app foregrounded")
-                }
+                checkMicrophonePermission(shouldStartListening: true)
             }
         }
         .task {
@@ -250,24 +250,13 @@ struct HomeView: View {
     
     private func checkMicrophonePermission(shouldStartListening: Bool) {
         let isGranted: Bool
-        if #available(iOS 17.0, *) {
-            switch AVAudioApplication.shared.recordPermission {
-                case .granted:
-                    isGranted = true
-                case .denied, .undetermined:
-                    isGranted = false
-                @unknown default:
-                    isGranted = false
-            }
-        } else {
-            switch AVAudioSession.sharedInstance().recordPermission {
-                case .granted:
-                    isGranted = true
-                case .denied, .undetermined:
-                    isGranted = false
-                @unknown default:
-                    isGranted = false
-            }
+        switch AVAudioApplication.shared.recordPermission {
+            case .granted:
+                isGranted = true
+            case .denied, .undetermined:
+                isGranted = false
+            @unknown default:
+                isGranted = false
         }
         
         microphonePermissionGranted = isGranted
@@ -278,7 +267,20 @@ struct HomeView: View {
         }
     }
     
+    private func openSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
+        }
+    }
+
     private func requestMicrophoneAccess() {
+        let isDenied = AVAudioApplication.shared.recordPermission == .denied
+        
+        if isDenied {
+            openSettings()
+            return
+        }
+
         let completion: (Bool) -> Void = { granted in
             DispatchQueue.main.async {
                 self.handleMicrophonePermissionResult(granted: granted)
@@ -401,6 +403,8 @@ struct HomeView: View {
             } catch {
                 print("Failed to start microphone streaming: \(error)")
             }
+        } else {
+            requestMicrophoneAccess()
         }
     }
 

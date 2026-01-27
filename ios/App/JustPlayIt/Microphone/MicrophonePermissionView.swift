@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 struct MicrophonePermissionView: View {
+    var isDenied: Bool = false
     var onRequestAccess: () -> Void
     
     var body: some View {
@@ -9,15 +10,15 @@ struct MicrophonePermissionView: View {
             HStack {
                 Image(systemName: "mic.fill")
                     .font(.title)
-                Text("Microphone Access Required")
+                Text(isDenied ? "Microphone Access Denied" : "Microphone Access Required")
                     .font(.headline)
             }
             
-            Text("Please allow microphone access to use voice commands.")
+            Text(isDenied ? "Please enable microphone access in Settings to use voice commands." : "Voice commands require microphone access.")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
             
-            Button("Grant Access") {
+            Button(isDenied ? "Open Settings" : "Enable") {
                 onRequestAccess()
             }
             .buttonStyle(.borderedProminent)

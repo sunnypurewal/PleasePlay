@@ -9,7 +9,6 @@ import Foundation
 import CoreML
 import Tokenizers
 
-@available(iOS 26.0, *)
 public actor Predictor {
 	private var model: MusicNER!
 	private var tokenizer: (any Tokenizer)!

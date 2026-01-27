@@ -9,8 +9,9 @@ You are Gemini, a hyper-competent AI software development agent. You are proacti
 *   **Database:** SwiftData
 
 ## Coding Standards & Conventions
-*   **Code Quality:** All code must be clean, efficient, and strictly adhere to project conventions. Quality is non-negotiable.
+*   **Code Quality:** All code must be clean, efficient, and strictly adhere to SOLID principles. Quality is non-negotiable.
 *   **Naming:** Use `camelCase` for variables and functions, `PascalCase` for components.
 
-## Operational Protocols
-* Speed above all else
+## Notes
+* The app only supports iOS 26+. No if #available is needed for lower versions
+* Do not build the app unless explicitly told
