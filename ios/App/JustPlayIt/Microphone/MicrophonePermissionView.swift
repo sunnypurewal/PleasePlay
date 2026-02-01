@@ -18,7 +18,7 @@ struct MicrophonePermissionView: View {
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
             
-            Button(isDenied ? "Open Settings" : "Enable") {
+            Button(isDenied ? "Open Settings" : "Continue") {
                 onRequestAccess()
             }
             .buttonStyle(.borderedProminent)
